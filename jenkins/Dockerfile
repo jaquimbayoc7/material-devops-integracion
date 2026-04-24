@@ -28,4 +28,16 @@ RUN curl -fsSL "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release
 # ── Acceso al socket de Docker ──────────────────────────────────────
 RUN groupadd -f docker && usermod -aG docker jenkins
 
-USER jenkins
+# ── gosu: permite cambiar de usuario desde el entrypoint ────────────
+RUN curl -fsSL "https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64" \
+        -o /usr/local/bin/gosu && \
+    chmod +x /usr/local/bin/gosu && \
+    gosu nobody true
+
+# ── Entrypoint: corrige permisos del socket y arranca como jenkins ──
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# El entrypoint corre como root para poder hacer chmod del socket,
+# luego baja a jenkins via gosu
+ENTRYPOINT ["/docker-entrypoint.sh"]
