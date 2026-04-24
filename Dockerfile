@@ -27,7 +27,11 @@ COPY app/ ./app/
 EXPOSE 8000
 
 # Usuario sin privilegios por seguridad
-RUN adduser --disabled-password --gecos "" appuser
+RUN adduser --disabled-password --gecos "" appuser \
+    && mkdir -p /app/data \
+    && chown appuser:appuser /app/data
 USER appuser
+
+ENV DATABASE_URL=sqlite:////app/data/tasks.db
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

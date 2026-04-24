@@ -1,10 +1,11 @@
 """Database engine, session factory, ORM model, and get_db dependency."""
+import os
 from collections.abc import Generator
 
 from sqlalchemy import Boolean, Column, Integer, String, create_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-DATABASE_URL = "sqlite:///./tasks.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tasks.db")
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
