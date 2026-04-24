@@ -85,6 +85,8 @@
         .week-link-btn { display: inline-block; margin-top: 14px; padding: 8px 18px; border-radius: 20px; font-size: 0.85em; font-weight: 600; text-decoration: none; transition: opacity 0.2s; }
         .week-link-btn:hover { opacity: 0.8; }
         .w1-link { color: #0077b6; border: 1.5px solid #0077b6; background: #f0f8ff; }
+        .w2-link { color: #1a7e3e; border: 1.5px solid #1a7e3e; background: #f0fff5; }
+        .w3-link { color: #7b3fa0; border: 1.5px solid #7b3fa0; background: #faf0ff; }
         .stages-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0; margin: 20px 0; }
         .stage-box { background: var(--card-bg); border: 2px solid #d0d5e8; border-radius: 8px; padding: 12px 16px; text-align: center; min-width: 110px; font-weight: 500; font-size: 0.9em; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
         .stage-box.s1 { border-color: #f05032; } .stage-box.s2 { border-color: #0a9edc; } .stage-box.s3 { border-color: #2496ed; }
@@ -409,6 +411,79 @@
 
         <hr class="divider">
 
+        <h2 id="prereqs">&#9989; Antes de comenzar &mdash; Cuentas y herramientas</h2>
+
+        <div class="info-box" style="border-left: 4px solid #2ecc71;">
+            <strong>&#127775; &#9729;&#65039; Cuentas gratuitas en la NUBE (cr&eacute;alas antes del Paso 1)</strong><br><br>
+            <table style="width:100%; border-collapse:collapse; font-size:0.92em;">
+                <thead>
+                    <tr style="background:#eaf7f0;">
+                        <th style="padding:6px 10px; text-align:left;">Servicio</th>
+                        <th style="padding:6px 10px; text-align:left;">URL de registro</th>
+                        <th style="padding:6px 10px; text-align:left;">Para qu&eacute; se usa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding:6px 10px;"><strong>GitHub</strong></td>
+                        <td style="padding:6px 10px;"><a href="https://github.com/signup" target="_blank">github.com/signup</a></td>
+                        <td style="padding:6px 10px;">Repositorio del c&oacute;digo fuente; Jenkins lee de aqu&iacute; para disparar el pipeline</td>
+                    </tr>
+                    <tr style="background:#f9f9f9;">
+                        <td style="padding:6px 10px;"><strong>Docker Hub</strong></td>
+                        <td style="padding:6px 10px;"><a href="https://hub.docker.com/signup" target="_blank">hub.docker.com/signup</a></td>
+                        <td style="padding:6px 10px;">Registro de im&aacute;genes Docker; Jenkins empuja aqu&iacute; la imagen construida</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top:12px; padding:10px; background:#fffdf0; border-radius:6px; font-size:0.9em;">
+                <strong>&#128272; Despu&eacute;s de crear tu cuenta Docker Hub:</strong><br>
+                Ve a <em>Account Settings &rarr; Security &rarr; New Access Token</em> &rarr; nombre: <code>jenkins-pipeline</code>, permiso <code>Read &amp; Write</code> &rarr; copia y guarda el token (solo se muestra una vez).
+            </div>
+        </div>
+
+        <div class="warn-box" style="border-left: 4px solid #3498db;">
+            <strong>&#128187; Herramientas locales &mdash; instalar en tu m&aacute;quina (LOCAL)</strong><br><br>
+            <table style="width:100%; border-collapse:collapse; font-size:0.92em;">
+                <thead>
+                    <tr style="background:#eaf3fb;">
+                        <th style="padding:6px 10px; text-align:left;">Herramienta</th>
+                        <th style="padding:6px 10px; text-align:left;">Descarga</th>
+                        <th style="padding:6px 10px; text-align:left;">Verificar instalaci&oacute;n</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding:6px 10px;"><strong>Python 3.10+</strong></td>
+                        <td style="padding:6px 10px;"><a href="https://www.python.org/downloads/" target="_blank">python.org/downloads</a></td>
+                        <td style="padding:6px 10px;"><code>py --version</code></td>
+                    </tr>
+                    <tr style="background:#f9f9f9;">
+                        <td style="padding:6px 10px;"><strong>Docker Desktop</strong><br><small>Habilitar Kubernetes en Settings</small></td>
+                        <td style="padding:6px 10px;"><a href="https://www.docker.com/products/docker-desktop/" target="_blank">docker.com/products</a></td>
+                        <td style="padding:6px 10px;"><code>docker --version</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 10px;"><strong>Git</strong></td>
+                        <td style="padding:6px 10px;"><a href="https://git-scm.com/downloads" target="_blank">git-scm.com</a></td>
+                        <td style="padding:6px 10px;"><code>git --version</code></td>
+                    </tr>
+                    <tr style="background:#f9f9f9;">
+                        <td style="padding:6px 10px;"><strong>VS Code</strong> <small>(opcional)</small></td>
+                        <td style="padding:6px 10px;"><a href="https://code.visualstudio.com/" target="_blank">code.visualstudio.com</a></td>
+                        <td style="padding:6px 10px;"><code>code --version</code></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top:12px; padding:10px; background:#fffdf0; border-radius:6px; font-size:0.9em;">
+                <strong>&#9989; Verificar entorno local en terminal (PowerShell / cmd):</strong><br>
+                <code>py --version &amp;&amp; docker --version &amp;&amp; docker compose version &amp;&amp; git --version &amp;&amp; kubectl version --client</code><br>
+                <strong>Kubernetes</strong>: en Docker Desktop &rarr; Settings &rarr; Kubernetes &rarr; Enable Kubernetes &rarr; Apply &amp; Restart
+            </div>
+        </div>
+
+        <hr class="divider">
+
         <h2 id="semanas">4. Plan de 3 Semanas</h2>
 
         <div class="week-timeline">
@@ -447,7 +522,7 @@
                 <div class="week-header w2">
                     &#129302; Semana 2
                     <span class="week-tag">Jenkins CI</span>
-                    <span class="status-badge badge-active">&#8987; Pr&oacute;xima</span>
+                    <span class="status-badge badge-done">&#10003; Completada</span>
                 </div>
                 <div class="week-body">
                     <p style="font-size:0.9em; color:#555; margin-bottom:12px;">
@@ -466,6 +541,7 @@
                         <strong>&#9989; Verificaci&oacute;n:</strong><br>
                         Commit &rarr; Jenkins detecta cambio &rarr; 4 stages en verde &rarr; imagen en Docker Hub
                     </div>
+                    <a href="week2.html" class="week-link-btn w2-link">&#128214; Ver avance detallado &rarr;</a>
                 </div>
             </div>
 
@@ -473,7 +549,7 @@
                 <div class="week-header w3">
                     &#9096;&#65039; Semana 3
                     <span class="week-tag">Kubernetes + Deploy</span>
-                    <span class="status-badge badge-next">&#128338; Pendiente</span>
+                    <span class="status-badge badge-done">&#10003; Completada</span>
                 </div>
                 <div class="week-body">
                     <p style="font-size:0.9em; color:#555; margin-bottom:12px;">
@@ -492,8 +568,10 @@
                     <div class="success-box" style="margin-top:14px; padding:12px 16px;">
                         <strong>&#9989; Verificaci&oacute;n:</strong><br>
                         <code>kubectl get pods -n devops-project</code><br>
-                        &rarr; 2 pods en estado <code>Running</code>
+                        &rarr; 2 pods en estado <code>Running</code><br>
+                        <code>curl http://localhost/health</code> &rarr; <code>{"status":"ok"}</code>
                     </div>
+                    <a href="week3.html" class="week-link-btn w3-link">&#128214; Ver avance detallado &rarr;</a>
                 </div>
             </div>
 

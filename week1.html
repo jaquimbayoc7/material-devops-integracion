@@ -1005,6 +1005,15 @@ TASKS = [
         <!-- VERIFICACION FINAL -->
         <h2 id="verificacion">&#9989; Verificaci&oacute;n final de Semana 1</h2>
 
+        <div class="warn-box" style="border-left:4px solid #3498db;">
+            <strong>&#128187; LOCAL vs &#9729;&#65039; NUBE &mdash; Semana 1 es 100% LOCAL</strong><br>
+            Todo lo que construyes en Semana 1 corre en tu m&aacute;quina. El &uacute;nico elemento
+            externo es el <strong>repositorio de GitHub</strong> (gratuito) al que har&aacute;s el primer
+            <code>git push</code> al final.<br><br>
+            <strong>Herramientas necesarias (ya instaladas localmente):</strong>
+            <code>Python 3.10+</code> &bull; <code>Docker Desktop</code> &bull; <code>Git</code>
+        </div>
+
         <div class="success-box">
             <strong>Checklist completo de entregables:</strong>
             <ol style="margin-top:10px;">
@@ -1039,10 +1048,18 @@ TASKS = [
 <span class="cmd">docker compose up --build</span>
 <span class="cm"># Abrir: http://localhost:8000/docs</span>
 
-<span class="cm"># 5. Git push (pendiente)</span>
+<span class="cm"># 5. Git push — publicar en GitHub (NUBE)</span>
+<span class="cm"># Primero: crea un repositorio vacío en github.com (sin README, sin .gitignore)</span>
+<span class="cm"># Sustituye TU-USUARIO y TU-REPO por los valores reales</span>
+<span class="cmd">git init</span>
 <span class="cmd">git add .</span>
 <span class="cmd">git commit -m "feat: Week 1 - FastAPI CRUD + Docker + pytest (11 tests)"</span>
-<span class="cmd">git push origin main</span></code></pre>
+<span class="cmd">git branch -M main</span>
+<span class="cmd">git remote add origin https://github.com/TU-USUARIO/TU-REPO.git</span>
+<span class="cmd">git push -u origin main</span>
+<span class="out">Enumerating objects: 22, done.</span>
+<span class="out">To https://github.com/TU-USUARIO/TU-REPO.git</span>
+<span class="out"> * [new branch]      main -> main</span></code></pre>
         </div>
 
         <div class="info-box">

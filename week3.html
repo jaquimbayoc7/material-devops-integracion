@@ -240,6 +240,48 @@
             </div>
         </section>
 
+        <!-- ════════════════════ CUENTAS Y ENTORNO NECESARIOS ════════════════════ -->
+        <div class="info-box" style="border-left:4px solid #326ce5; margin-bottom:0;">
+            <strong>&#128187; Semana 3 es 100% LOCAL &mdash; Kubernetes corre en Docker Desktop</strong><br>
+            No se necesita ninguna cuenta adicional en la nube. Kubernetes (K8s) est&aacute; incluido en
+            <strong>Docker Desktop</strong>. Solo debes habilitarlo antes de continuar.
+        </div>
+        <div class="step-card" style="margin-top:0; border-top:0;">
+            <div class="step-body" style="padding-top:12px;">
+                <h3>&#9989; Verificar que Kubernetes est&aacute; habilitado</h3>
+                <ol class="ui-steps">
+                    <li>Abre <strong>Docker Desktop</strong> &rarr; <em>Settings</em> &rarr; <em>Kubernetes</em></li>
+                    <li>Marca <strong>Enable Kubernetes</strong> &rarr; <em>Apply &amp; Restart</em></li>
+                    <li>Espera hasta que el indicador cambie a <span style="color:#2ecc71">&#11044; verde</span> en la barra de estado inferior</li>
+                </ol>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal LOCAL &mdash; verificar Kubernetes</div>
+                    <pre><code><span class="cmd">kubectl version --client</span>
+<span class="out">Client Version: v1.30.x</span>
+
+<span class="cmd">kubectl cluster-info</span>
+<span class="out">Kubernetes control plane is running at https://127.0.0.1:6443</span>
+
+<span class="cm"># Crear el namespace del proyecto (solo la primera vez)</span>
+<span class="cmd">kubectl create namespace devops-project</span>
+<span class="out">namespace/devops-project created</span></code></pre>
+                </div>
+                <div class="info-box" style="margin-top:12px;">
+                    <strong>&#128187; LOCAL vs &#9729;&#65039; NUBE en Semana 3</strong><br>
+                    <table style="width:100%; border-collapse:collapse; font-size:0.9em; margin-top:8px;">
+                        <thead><tr style="background:#eaf3fb;"><th style="padding:5px 10px;text-align:left;">Qu&eacute;</th><th style="padding:5px 10px;text-align:left;">D&oacute;nde</th></tr></thead>
+                        <tbody>
+                            <tr><td style="padding:5px 10px;">Kubernetes cluster</td><td style="padding:5px 10px;">&#128187; <strong>LOCAL</strong> — Docker Desktop</td></tr>
+                            <tr style="background:#f9f9f9;"><td style="padding:5px 10px;">Im&aacute;genes Docker</td><td style="padding:5px 10px;">&#9729;&#65039; <strong>NUBE</strong> — Docker Hub (descargadas con <code>imagePullPolicy: Always</code>)</td></tr>
+                            <tr><td style="padding:5px 10px;">Jenkins CI</td><td style="padding:5px 10px;">&#128187; <strong>LOCAL</strong> — contenedor Docker</td></tr>
+                            <tr style="background:#f9f9f9;"><td style="padding:5px 10px;">C&oacute;digo fuente</td><td style="padding:5px 10px;">&#9729;&#65039; <strong>NUBE</strong> — GitHub</td></tr>
+                            <tr><td style="padding:5px 10px;">API accesible en</td><td style="padding:5px 10px;">&#128187; <strong>LOCAL</strong> — http://localhost/docs</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- ESTRUCTURA -->
         <h2>&#128193; Estructura tras la Semana 3</h2>
 
@@ -853,13 +895,50 @@ default           Active   2d</span></code></pre>
         <div class="code-block">
             <div class="code-header">
                 <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
-                terminal
+                Terminal LOCAL &mdash; pruebas end-to-end completas
             </div>
-            <pre><code><span class="cmd">curl http://localhost/health</span>
+            <pre><code><span class="cm"># Health check</span>
+<span class="cmd">curl http://localhost/health</span>
 <span class="out">{"status":"ok"}</span>
 
+<span class="cm"># Listar tareas (vacío en la primera ejecución)</span>
 <span class="cmd">curl http://localhost/tasks/</span>
-<span class="out">[]</span></code></pre>
+<span class="out">[]</span>
+
+<span class="cm"># Crear una tarea de prueba</span>
+<span class="cmd">curl -X POST http://localhost/tasks/ -H "Content-Type: application/json" -d "{\"title\":\"Prueba K8s\",\"description\":\"Verificación end-to-end\"}"</span>
+<span class="out">{"id":1,"title":"Prueba K8s","description":"Verificación end-to-end","completed":false}</span>
+
+<span class="cm"># Verificar Swagger UI en navegador</span>
+<span class="cm"># Abrir: http://localhost/docs</span>
+
+<span class="cm"># Verificar logs de un pod específico</span>
+<span class="cmd">kubectl logs -l app=taskapi -n devops-project --tail=20</span>
+<span class="out">INFO:     Uvicorn running on http://0.0.0.0:8000</span>
+<span class="out">INFO:     Application startup complete.</span></code></pre>
+        </div>
+
+        <h3>6. Solucionar problemas comunes (troubleshooting)</h3>
+        <div class="code-block">
+            <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal LOCAL</div>
+            <pre><code><span class="cm"># Pod en CrashLoopBackOff — ver logs del contenedor fallido</span>
+<span class="cmd">kubectl describe pod -l app=taskapi -n devops-project</span>
+<span class="cmd">kubectl logs -l app=taskapi -n devops-project --previous</span>
+
+<span class="cm"># kubectl: connection refused 127.0.0.1 (Jenkins no puede alcanzar K8s)</span>
+<span class="cm"># El Jenkinsfile ya incluye el fix para Docker Desktop:</span>
+<span class="cm"># sed -i 's/127.0.0.1/host.docker.internal/g' /tmp/kubeconfig</span>
+<span class="cm"># sed -i 's/certificate-authority-data:.*/insecure-skip-tls-verify: true/' /tmp/kubeconfig</span>
+
+<span class="cm"># Forzar re-descarga de la imagen en los pods</span>
+<span class="cmd">kubectl rollout restart deployment/taskapi -n devops-project</span>
+<span class="out">deployment.apps/taskapi restarted</span>
+
+<span class="cm"># Ver eventos del namespace (útil para diagnosticar)</span>
+<span class="cmd">kubectl get events -n devops-project --sort-by='.lastTimestamp'</span>
+
+<span class="cm"># Ver todos los recursos del namespace de un vistazo</span>
+<span class="cmd">kubectl get all -n devops-project</span></code></pre>
         </div>
 
         <div class="success-box">
@@ -882,7 +961,7 @@ default           Active   2d</span></code></pre>
     <span class="kw">agent</span> any
 
     <span class="kw">environment</span> {
-        IMAGE_NAME = <span class="st">"tu-usuario/devops-taskapi"</span>
+        IMAGE_NAME = <span class="st">"TU-USUARIO/devops-taskapi"</span>  <span class="cm">// ← reemplaza TU-USUARIO por tu Docker ID</span>
     }
 
     <span class="kw">triggers</span> {
