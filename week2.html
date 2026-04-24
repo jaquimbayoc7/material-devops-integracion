@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semana 2 — DevOps Task Manager API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary:   #1a1f36;
+            --secondary: #2d3561;
+            --red:       #d33833;
+            --orange:    #e05a28;
+            --green:     #27ae60;
+            --accent:    #e94560;
+            --light-bg:  #f7f8fc;
+            --card-bg:   #ffffff;
+            --dark-text: #2c3e50;
+            --code-bg:   #1e2235;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; color: var(--dark-text); background: var(--light-bg); line-height: 1.8; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+        /* Header */
+        .main-header { background: linear-gradient(135deg, #d33833 0%, #e05a28 100%); color: white; }
+        .top-bar { padding: 28px 0 16px; text-align: center; }
+        .breadcrumb { font-size: 0.85em; opacity: 0.8; margin-bottom: 8px; }
+        .breadcrumb a { color: rgba(255,255,255,0.85); text-decoration: none; }
+        .breadcrumb a:hover { color: white; }
+        .brand-name { font-size: 1.9em; font-weight: 700; margin: 6px 0 4px; }
+        .brand-sub  { font-size: 0.95em; opacity: 0.8; font-weight: 300; }
+        .week-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); border-radius: 30px; padding: 6px 20px; font-size: 0.85em; font-weight: 600; margin-top: 12px; }
+        .dot-yellow { width: 9px; height: 9px; background: #ffd700; border-radius: 50%; display: inline-block; }
+
+        /* Nav steps */
+        .step-nav { background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.1); padding: 12px 0; overflow-x: auto; }
+        .step-nav ul { list-style: none; display: flex; gap: 4px; min-width: max-content; padding: 0 16px; }
+        .step-nav a { color: rgba(255,255,255,0.8); text-decoration: none; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: block; white-space: nowrap; }
+        .step-nav a:hover { background: rgba(255,255,255,0.15); color: white; }
+
+        /* Hero */
+        .hero { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: white; padding: 48px 36px; text-align: center; margin-bottom: 40px; }
+        .hero h1 { font-size: 1.9em; font-weight: 700; margin-bottom: 12px; }
+        .hero .lead { opacity: 0.88; max-width: 700px; margin: 0 auto 20px; font-size: 1.05em; }
+        .results-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 22px; }
+        .result-chip { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.28); border-radius: 10px; padding: 10px 22px; font-size: 0.95em; font-weight: 500; text-align: center; }
+        .result-chip .num { font-size: 1.5em; font-weight: 700; display: block; color: #ffd700; }
+
+        /* Pipeline flow */
+        .pipeline-flow { display: flex; flex-wrap: wrap; gap: 0; align-items: center; justify-content: center; margin: 24px 0 10px; }
+        .pipe-stage { background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 10px 20px; font-size: 0.92em; font-weight: 600; text-align: center; color: white; white-space: nowrap; }
+        .pipe-stage.trigger { background: rgba(211,56,51,0.4); border-color: rgba(255,100,80,0.5); }
+        .pipe-stage.test   { background: rgba(39,174,96,0.3); border-color: rgba(39,174,96,0.5); }
+        .pipe-stage.build  { background: rgba(36,150,237,0.3); border-color: rgba(36,150,237,0.5); }
+        .pipe-stage.push   { background: rgba(224,90,40,0.4); border-color: rgba(224,90,40,0.5); }
+        .pipe-stage.hub    { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); font-size: 0.85em; color: rgba(255,255,255,0.7); }
+        .pipe-arrow { color: rgba(255,255,255,0.5); font-size: 1.3em; padding: 0 6px; }
+
+        /* Content */
+        .main-content { padding-bottom: 60px; }
+        h2 { color: var(--primary); font-size: 1.6em; margin: 50px 0 16px; padding-bottom: 10px; border-bottom: 3px solid var(--red); }
+        h3 { color: var(--secondary); font-size: 1.2em; margin: 26px 0 10px; }
+        p  { margin-bottom: 14px; }
+        ul, ol { margin-left: 22px; margin-bottom: 14px; }
+        li { margin-bottom: 7px; }
+        code { background: #e8ecf5; border-radius: 4px; padding: 2px 7px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #c0392b; }
+
+        /* Step cards */
+        .step-card { background: var(--card-bg); border: 1px solid #dde0ee; border-radius: 14px; margin: 30px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; }
+        .step-header { display: flex; align-items: center; gap: 16px; padding: 20px 28px; }
+        .step-header.s1 { background: linear-gradient(90deg, #d33833, #e05a28); }
+        .step-header.s2 { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+        .step-header.s3 { background: linear-gradient(90deg, #d35400, #e67e22); }
+        .step-header.s4 { background: linear-gradient(90deg, #8e44ad, #9b59b6); }
+        .step-header.s5 { background: linear-gradient(90deg, #0a9edc, #0077b6); }
+        .step-header.s6 { background: linear-gradient(90deg, #2496ed, #1a7abf); }
+        .step-header.s7 { background: linear-gradient(90deg, #0db7ed, #0096c7); }
+        .step-header.s8 { background: linear-gradient(90deg, #16a085, #27ae60); }
+        .step-num { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; font-size: 1.4em; font-weight: 700; color: white; flex-shrink: 0; }
+        .step-header-text { color: white; }
+        .step-header-text h3 { color: white; margin: 0 0 3px; font-size: 1.15em; }
+        .step-header-text .step-desc { opacity: 0.85; font-size: 0.9em; font-weight: 300; }
+        .step-body { padding: 26px 28px; }
+
+        /* Code blocks */
+        .code-block { background: var(--code-bg); border-radius: 10px; margin: 16px 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .code-header { background: rgba(255,255,255,0.07); padding: 10px 16px; font-size: 0.82em; font-family: 'Fira Code', monospace; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .code-header .dot-r { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
+        .code-header .dot-y { width: 11px; height: 11px; border-radius: 50%; background: #ffbd2e; }
+        .code-header .dot-g { width: 11px; height: 11px; border-radius: 50%; background: #28c840; }
+        .code-block pre { padding: 18px 20px; overflow-x: auto; }
+        .code-block code { background: transparent; color: #e2e8f0; font-size: 0.87em; line-height: 1.7; padding: 0; }
+        .kw   { color: #c792ea; }
+        .fn   { color: #82aaff; }
+        .st   { color: #c3e88d; }
+        .cm   { color: #546e7a; font-style: italic; }
+        .num  { color: #f78c6c; }
+        .cls  { color: #ffcb6b; }
+        .dec  { color: #89ddff; }
+        .cmd  { color: #89ddff; }
+        .out  { color: #c3e88d; }
+        .err  { color: #ff5370; }
+        .hl   { background: rgba(255,255,255,0.06); display: block; }
+        .gr   { color: #f39c12; }
+
+        /* Boxes */
+        .info-box    { background: linear-gradient(135deg, #fef5ec, #fdebd0); border-left: 5px solid var(--red); padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .warn-box    { background: linear-gradient(135deg, #fef9e7, #fdebd0); border-left: 5px solid #f39c12; padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .success-box { background: linear-gradient(135deg, #e8f8f5, #d5f5e3); border-left: 5px solid var(--green); padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .tip-box     { background: linear-gradient(135deg, #e8f4fd, #d6eaf8); border-left: 5px solid #2496ed; padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .divider { border: none; border-top: 2px solid #e5e8f0; margin: 36px 0; }
+
+        /* File explorer panel */
+        .struct-panel { background: var(--code-bg); border-radius: 14px; overflow: hidden; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.07); }
+        .struct-hdr { background: rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 13px 20px; display: flex; align-items: center; gap: 8px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: rgba(255,255,255,0.8); }
+        .struct-hdr .dot-r { width:11px; height:11px; border-radius:50%; background:#ff5f57; flex-shrink:0; }
+        .struct-hdr .dot-y { width:11px; height:11px; border-radius:50%; background:#ffbd2e; flex-shrink:0; }
+        .struct-hdr .dot-g { width:11px; height:11px; border-radius:50%; background:#28c840; flex-shrink:0; }
+        .struct-hdr .hdr-title { color: white; font-weight: 600; margin-left: 4px; }
+        .struct-hdr .hdr-sub { margin-left: auto; font-size: 0.8em; opacity: 0.4; white-space: nowrap; }
+        .ftree-body { padding: 6px 0 10px; }
+        .ftree-row { display: flex; align-items: center; padding: 4px 16px; min-height: 30px; transition: background 0.12s; }
+        .ftree-row:hover { background: rgba(255,255,255,0.045); }
+        .ftree-row.ft-root { padding: 10px 16px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 2px; }
+        .ftree-row.ft-new  { background: rgba(211,56,51,0.07); }
+        .ftree-row.ft-new:hover { background: rgba(211,56,51,0.12); }
+        .ftree-sp { display: inline-flex; width: 18px; flex-shrink: 0; align-items: stretch; justify-content: center; font-family: 'Fira Code', monospace; font-size: 0.9em; color: rgba(255,255,255,0.13); }
+        .ftree-sp.vl::before { content: "│"; }
+        .ftree-conn { display: inline-flex; align-items: center; width: 30px; flex-shrink: 0; color: rgba(255,255,255,0.16); font-family: 'Fira Code', monospace; font-size: 0.87em; }
+        .ftree-icon { width: 22px; text-align: center; flex-shrink: 0; font-size: 0.9em; }
+        .ftree-name { font-family: 'Fira Code', monospace; font-size: 0.85em; padding: 0 4px; }
+        .ftree-name.is-root   { color: white; font-weight: 700; font-size: 0.9em; }
+        .ftree-name.is-dir    { color: #82aaff; font-weight: 600; }
+        .ftree-name.is-py     { color: #c3e88d; }
+        .ftree-name.is-docker { color: #89ddff; }
+        .ftree-name.is-yaml   { color: #ffcb6b; }
+        .ftree-name.is-md     { color: #f78c6c; }
+        .ftree-name.is-git    { color: #546e7a; }
+        .ftree-name.is-txt    { color: #cdd6e0; }
+        .ftree-name.is-groovy { color: #ffd700; }
+        .ftree-name.is-new    { color: #ff9a9a; }
+        .ftree-desc { font-size: 0.77em; font-family: 'Roboto', sans-serif; color: rgba(255,255,255,0.3); margin-left: 10px; font-style: italic; white-space: nowrap; }
+        .ftree-badge { display: inline-flex; align-items: center; border-radius: 5px; padding: 1px 9px; font-size: 0.72em; font-weight: 600; font-family: 'Roboto', sans-serif; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+        .bp1  { background: rgba(0,119,182,0.2);   color: #82d8ff; border: 1px solid rgba(0,119,182,0.35); }
+        .bp8  { background: rgba(211,56,51,0.2);   color: #ff9a9a; border: 1px solid rgba(211,56,51,0.35); }
+        .bp9  { background: rgba(192,57,43,0.2);   color: #ffaaaa; border: 1px solid rgba(192,57,43,0.35); }
+        .bp11 { background: rgba(142,68,173,0.2);  color: #d7aefb; border: 1px solid rgba(142,68,173,0.35); }
+        .bp12 { background: rgba(10,158,220,0.2);  color: #89ddff; border: 1px solid rgba(10,158,220,0.35); }
+        .bp13 { background: rgba(36,150,237,0.2);  color: #82d8ff; border: 1px solid rgba(36,150,237,0.35); }
+        .bpw1 { background: rgba(39,174,96,0.15);  color: #82d8a0; border: 1px solid rgba(39,174,96,0.3); }
+        .struct-legend { border-top: 1px solid rgba(255,255,255,0.06); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 0.77em; color: rgba(255,255,255,0.35); font-family: 'Roboto', sans-serif; }
+
+        /* Test results / output */
+        .test-results { background: var(--code-bg); border-radius: 10px; padding: 20px; font-family: 'Fira Code', monospace; font-size: 0.86em; line-height: 1.9; margin: 16px 0; }
+        .t-pass { color: #c3e88d; }
+        .t-warn { color: #ffcb6b; }
+        .t-info { color: #89ddff; }
+        .t-dim  { color: #546e7a; }
+
+        /* UI steps */
+        .ui-steps { counter-reset: ui-step; }
+        .ui-steps li { list-style: none; counter-increment: ui-step; margin-bottom: 12px; padding-left: 36px; position: relative; }
+        .ui-steps li::before { content: counter(ui-step); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; background: linear-gradient(135deg, #d33833, #e05a28); border-radius: 50%; color: white; font-size: 0.78em; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+        /* Architecture / pipeline flow inline */
+        .arch-flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 18px 0; }
+        .arch-box { background: var(--card-bg); border: 1.5px solid #c0cae8; border-radius: 8px; padding: 10px 18px; font-size: 0.9em; font-weight: 500; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .arch-arrow { color: #8090b8; font-size: 1.3em; }
+        .arch-box.highlight { border-color: var(--red); background: #fef5ec; color: var(--red); }
+
+        /* Footer */
+        .main-footer { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 36px 0; text-align: center; margin-top: 40px; }
+        .main-footer a { color: #fff9e6; text-decoration: none; font-weight: 500; }
+        .main-footer a:hover { color: #ffd700; }
+        .footer-links { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-top: 12px; }
+        #scrollTopBtn { display: none; position: fixed; bottom: 22px; right: 22px; background: var(--secondary); color: white; border: none; padding: 14px 18px; font-size: 17px; border-radius: 50%; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.25); z-index: 99; }
+        #scrollTopBtn:hover { background: var(--red); }
+        @media (max-width: 600px) { .hero h1 { font-size: 1.4em; } .step-body { padding: 18px; } }
+    </style>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="container">
+        <div class="top-bar">
+            <div class="breadcrumb">
+                <a href="overview.html">&#127968; Inicio</a> &rsaquo; <strong>Semana 2</strong>
+            </div>
+            <div class="brand-name">&#128308; Semana 2 &mdash; Jenkins CI Pipeline</div>
+            <div class="brand-sub">DevOps Task Manager API &mdash; Integraci&oacute;n continua con Jenkins y Docker Hub</div>
+            <div class="week-badge"><span class="dot-yellow"></span> En Progreso &mdash; 8 tareas (pasos 8&ndash;15)</div>
+        </div>
+        <nav class="step-nav">
+            <ul>
+                <li><a href="#paso8">8. Jenkins setup</a></li>
+                <li><a href="#paso9">9. Config inicial</a></li>
+                <li><a href="#paso10">10. Credenciales</a></li>
+                <li><a href="#paso11">11. Jenkinsfile</a></li>
+                <li><a href="#paso12">12. Stage Test</a></li>
+                <li><a href="#paso13">13. Stage Build</a></li>
+                <li><a href="#paso14">14. Stage Push</a></li>
+                <li><a href="#paso15">15. Job + SCM</a></li>
+                <li><a href="#verificacion">&#9989; Verificaci&oacute;n</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="container">
+
+        <!-- HERO -->
+        <section class="hero">
+            <h1>&#9881;&#65039; Pipeline CI de cuatro etapas</h1>
+            <p class="lead">
+                Jenkins se encarga de cada <code style="background:rgba(255,255,255,0.12);color:#ffd700">git push</code>:
+                clona el repositorio, ejecuta los 11 tests, construye la imagen Docker
+                y la publica en Docker Hub &mdash; sin intervenci&oacute;n manual.
+            </p>
+
+            <div class="pipeline-flow">
+                <div class="pipe-stage trigger">git push</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage">Checkout</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage test">Test</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage build">Build</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage push">Push</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage hub">Docker Hub</div>
+            </div>
+
+            <div class="results-row">
+                <div class="result-chip"><span class="num">4</span>stages del pipeline</div>
+                <div class="result-chip"><span class="num">11</span>tests v&iacute;a JUnit</div>
+                <div class="result-chip"><span class="num">1</span>imagen en Docker Hub</div>
+                <div class="result-chip"><span class="num">2</span>archivos nuevos</div>
+            </div>
+        </section>
+
+        <!-- ESTRUCTURA DEL PROYECTO -->
+        <h2>&#128193; Estructura tras la Semana 2</h2>
+
+        <div class="struct-panel">
+            <div class="struct-hdr">
+                <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                <span class="hdr-title">material-devops-integracion /</span>
+                <span class="hdr-sub">Explorer</span>
+            </div>
+            <div class="ftree-body">
+
+                <!-- root -->
+                <div class="ftree-row ft-root">
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-root">material-devops-integracion</span>
+                    <span class="ftree-desc">ra&iacute;z del proyecto</span>
+                </div>
+
+                <!-- app/ -->
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-dir">app/</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">__init__.py</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">main.py</span>
+                    <span class="ftree-desc">FastAPI app + /health</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">database.py</span>
+                    <span class="ftree-desc">SQLAlchemy engine + ORM</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">models.py</span>
+                    <span class="ftree-desc">Pydantic v2 schemas</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">└─</span>
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-dir">routers/</span>
+                </div>
+
+                <!-- jenkins/ NEW -->
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-new">jenkins/</span>
+                    <span class="ftree-desc">servidor CI</span>
+                    <span class="ftree-badge bp8">Paso 8 &#10024;</span>
+                </div>
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128003;</span>
+                    <span class="ftree-name is-docker">Dockerfile</span>
+                    <span class="ftree-desc">Jenkins + Docker CLI + Python3</span>
+                    <span class="ftree-badge bp8">Paso 8 &#10024;</span>
+                </div>
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">└─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">docker-compose.yml</span>
+                    <span class="ftree-desc">LTS + volumen persistente</span>
+                    <span class="ftree-badge bp8">Paso 8 &#10024;</span>
+                </div>
+
+                <!-- tests/ -->
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-dir">tests/</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">└─</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">test_tasks.py</span>
+                    <span class="ftree-desc">11 tests &mdash; StaticPool + memory DB</span>
+                </div>
+
+                <!-- root files -->
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-groovy">Jenkinsfile</span>
+                    <span class="ftree-desc">pipeline declarativo (4 stages)</span>
+                    <span class="ftree-badge bp11">Pasos 11-14 &#10024;</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128003;</span>
+                    <span class="ftree-name is-docker">Dockerfile</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">docker-compose.yml</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-txt">requirements.txt</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">seed.py</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">└─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-md">README.md</span>
+                </div>
+
+            </div>
+            <div class="struct-legend">
+                <span style="color:#ff9a9a">&#9632;</span> Nuevo en Semana 2
+                &nbsp;&bull;&nbsp;
+                <span style="color:#82d8a0">&#9632;</span> Heredado de Semana 1
+                &nbsp;&bull;&nbsp;
+                <span style="color:#ffd700">&#9632;</span> Jenkinsfile (Groovy DSL)
+            </div>
+        </div>
+
+        <!-- ════════════════════ PASO 8 ════════════════════ -->
+        <div class="step-card" id="paso8">
+            <div class="step-header s1">
+                <div class="step-num">8</div>
+                <div class="step-header-text">
+                    <h3>jenkins/ &mdash; Imagen personalizada + docker-compose</h3>
+                    <div class="step-desc">Jenkins LTS con Docker CLI y Python 3 preinstalados</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    La imagen oficial <code>jenkins/jenkins:lts-jdk17</code> no incluye ni el cliente
+                    de Docker ni Python 3. El pipeline necesita ambos para construir imágenes y ejecutar
+                    <code>pytest</code>. La solución es extender la imagen con un <code>Dockerfile</code>
+                    propio dentro de la carpeta <code>jenkins/</code>.
+                </p>
+
+                <div class="info-box">
+                    <strong>&#128161; ¿Por qué una carpeta <code>jenkins/</code>?</strong><br>
+                    Separar los archivos de infraestructura CI del código de la aplicación mantiene
+                    el repositorio ordenado. El <code>docker-compose.yml</code> de la raíz levanta
+                    la <em>aplicación</em>; el de <code>jenkins/</code> levanta el <em>servidor CI</em>.
+                </div>
+
+                <h3>jenkins/Dockerfile</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        jenkins/Dockerfile
+                    </div>
+                    <pre><code><span class="kw">FROM</span> <span class="cls">jenkins/jenkins:lts-jdk17</span>
+
+<span class="kw">USER</span> root
+
+<span class="cm"># ── Docker CLI ──────────────────────────────────────────────</span>
+<span class="kw">RUN</span> apt-get update &amp;&amp; \
+    apt-get install -y ca-certificates curl gnupg lsb-release &amp;&amp; \
+    mkdir -p /etc/apt/keyrings &amp;&amp; \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | \
+        gpg --dearmor -o /etc/apt/keyrings/docker.gpg &amp;&amp; \
+    echo <span class="st">"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+         https://download.docker.com/linux/debian \
+         $(lsb_release -cs) stable"</span> &gt; /etc/apt/sources.list.d/docker.list &amp;&amp; \
+    apt-get update &amp;&amp; \
+    apt-get install -y docker-ce-cli &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+
+<span class="cm"># ── Python 3 + venv (para ejecutar pytest en el pipeline) ───</span>
+<span class="kw">RUN</span> apt-get update &amp;&amp; \
+    apt-get install -y python3 python3-pip python3-venv &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+
+<span class="cm"># ── Acceso al socket de Docker ───────────────────────────────</span>
+<span class="kw">RUN</span> groupadd -f docker &amp;&amp; usermod -aG docker jenkins
+
+<span class="kw">USER</span> jenkins</code></pre>
+                </div>
+
+                <h3>jenkins/docker-compose.yml</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        jenkins/docker-compose.yml
+                    </div>
+                    <pre><code><span class="kw">services</span>:
+  <span class="fn">jenkins</span>:
+    <span class="kw">build</span>: .                         <span class="cm"># construye la imagen desde ./Dockerfile</span>
+    <span class="kw">container_name</span>: jenkins
+    <span class="kw">restart</span>: unless-stopped
+    <span class="kw">ports</span>:
+      - <span class="st">"8080:8080"</span>               <span class="cm"># interfaz web</span>
+      - <span class="st">"50000:50000"</span>             <span class="cm"># agentes JNLP</span>
+    <span class="kw">volumes</span>:
+      - jenkins_home:/var/jenkins_home  <span class="cm"># datos persistentes</span>
+      - /var/run/docker.sock:/var/run/docker.sock  <span class="cm"># socket del host</span>
+
+<span class="kw">volumes</span>:
+  <span class="fn">jenkins_home</span>:</code></pre>
+                </div>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; Socket de Docker</strong><br>
+                    Montar <code>/var/run/docker.sock</code> permite que Jenkins ejecute comandos
+                    <code>docker build</code> y <code>docker push</code> usando el daemon del host.
+                    En producción considera usar <strong>Docker-in-Docker (dind)</strong> o
+                    <strong>Kaniko</strong> para mayor aislamiento.
+                </div>
+
+                <h3>Levantar Jenkins</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        terminal
+                    </div>
+                    <pre><code><span class="cm"># Desde la raíz del repositorio:</span>
+<span class="cmd">cd jenkins</span>
+<span class="cmd">docker compose up -d --build</span>
+
+<span class="cm"># Obtener la contraseña inicial de administrador:</span>
+<span class="cmd">docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword</span></code></pre>
+                </div>
+
+                <div class="success-box">
+                    <strong>&#9989; Verificación</strong><br>
+                    Abre <strong>http://localhost:8080</strong> en el navegador.
+                    Si ves la pantalla de desbloqueo de Jenkins, el contenedor está listo.
+                </div>
+
+            </div>
+        </div><!-- /paso8 -->
+
+        <!-- ════════════════════ PASO 9 ════════════════════ -->
+        <div class="step-card" id="paso9">
+            <div class="step-header s2">
+                <div class="step-num">9</div>
+                <div class="step-header-text">
+                    <h3>Configuración inicial de Jenkins</h3>
+                    <div class="step-desc">Setup Wizard, plugins y usuario administrador</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    Al acceder por primera vez a Jenkins, el asistente de instalación guía la
+                    configuración básica en cuatro pasos sencillos.
+                </p>
+
+                <ol class="ui-steps">
+                    <li>
+                        Abre <strong>http://localhost:8080</strong> y pega la contraseña del paso anterior
+                        en el campo <em>Administrator password</em>.
+                    </li>
+                    <li>
+                        Elige <strong>Install suggested plugins</strong> y espera a que finalice
+                        la instalación (2&ndash;5 minutos según conexión).
+                    </li>
+                    <li>
+                        Completa el formulario de creación del usuario administrador
+                        (<em>username</em>, <em>password</em>, <em>email</em>).
+                    </li>
+                    <li>
+                        Acepta la URL de Jenkins (<code>http://localhost:8080/</code>) y haz clic en
+                        <em>Start using Jenkins</em>.
+                    </li>
+                </ol>
+
+                <h3>Instalar plugins adicionales requeridos</h3>
+
+                <p>Los plugins sugeridos no incluyen <em>Docker Pipeline</em>. Instálalo manualmente:</p>
+
+                <ol class="ui-steps">
+                    <li>
+                        Menú lateral &rarr; <strong>Manage Jenkins</strong> &rarr;
+                        <strong>Plugins</strong> &rarr; <strong>Available plugins</strong>.
+                    </li>
+                    <li>
+                        Busca <strong>Docker Pipeline</strong> y marca la casilla.
+                    </li>
+                    <li>
+                        Busca <strong>JUnit</strong> (si no se instaló con los sugeridos) y marca la casilla.
+                    </li>
+                    <li>
+                        Haz clic en <strong>Install</strong> y reinicia Jenkins cuando lo solicite.
+                    </li>
+                </ol>
+
+                <div class="tip-box">
+                    <strong>&#128270; Plugins mínimos para este pipeline</strong><br>
+                    <ul style="margin: 8px 0 0 18px;">
+                        <li><strong>Git</strong> &mdash; clonar el repositorio (incluido en suggested)</li>
+                        <li><strong>Pipeline</strong> &mdash; soporte Jenkinsfile (incluido en suggested)</li>
+                        <li><strong>Docker Pipeline</strong> &mdash; pasos <code>docker.build</code> y <code>withDockerRegistry</code></li>
+                        <li><strong>JUnit</strong> &mdash; archivar el reporte XML de pytest</li>
+                        <li><strong>Credentials Binding</strong> &mdash; paso <code>withCredentials</code> (incluido en suggested)</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div><!-- /paso9 -->
+
+        <!-- ════════════════════ PASO 10 ════════════════════ -->
+        <div class="step-card" id="paso10">
+            <div class="step-header s3">
+                <div class="step-num">10</div>
+                <div class="step-header-text">
+                    <h3>Credenciales Docker Hub en Jenkins</h3>
+                    <div class="step-desc">ID dockerhub-creds &mdash; Personal Access Token recomendado</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El stage <em>Push</em> del pipeline necesita autenticarse con Docker Hub.
+                    Guardar las credenciales en Jenkins (nunca en el código) es la práctica
+                    estándar de CI/CD.
+                </p>
+
+                <ol class="ui-steps">
+                    <li>
+                        Menú lateral &rarr; <strong>Manage Jenkins</strong> &rarr;
+                        <strong>Credentials</strong> &rarr; <em>(global)</em> &rarr;
+                        <strong>Add Credentials</strong>.
+                    </li>
+                    <li>
+                        Tipo: <strong>Username with password</strong>.
+                    </li>
+                    <li>
+                        <strong>Username</strong>: tu usuario de Docker Hub.<br>
+                        <strong>Password</strong>: tu contraseña <em>o</em> (recomendado) un
+                        <strong>Personal Access Token</strong> con permiso <code>Read/Write</code>.
+                    </li>
+                    <li>
+                        <strong>ID</strong>: escribe exactamente <code>dockerhub-creds</code>
+                        (este valor se referencia en el Jenkinsfile).
+                    </li>
+                    <li>
+                        Haz clic en <strong>Create</strong>.
+                    </li>
+                </ol>
+
+                <div class="info-box">
+                    <strong>&#128275; Personal Access Token (PAT)</strong><br>
+                    En Docker Hub: <em>Account Settings &rarr; Security &rarr; New Access Token</em>.
+                    El PAT tiene alcance limitado y puede revocarse sin cambiar tu contraseña principal.
+                    Es la forma recomendada de autenticar pipelines CI/CD.
+                </div>
+
+            </div>
+        </div><!-- /paso10 -->
+
+        <!-- ════════════════════ PASO 11 ════════════════════ -->
+        <div class="step-card" id="paso11">
+            <div class="step-header s4">
+                <div class="step-num">11</div>
+                <div class="step-header-text">
+                    <h3>Jenkinsfile &mdash; Estructura del pipeline + Stage Checkout</h3>
+                    <div class="step-desc">Pipeline declarativo con environment, triggers y SCM checkout</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El archivo <code>Jenkinsfile</code> en la raíz del repositorio describe el pipeline
+                    completo usando la <strong>sintaxis declarativa</strong> de Jenkins. A diferencia
+                    de la sintaxis scripted, la declarativa impone una estructura clara y validación
+                    en tiempo de carga.
+                </p>
+
+                <div class="arch-flow">
+                    <div class="arch-box">Repositorio Git</div>
+                    <div class="arch-arrow">&#8594;</div>
+                    <div class="arch-box highlight">Jenkinsfile</div>
+                    <div class="arch-arrow">&#8594;</div>
+                    <div class="arch-box">Jenkins lee el pipeline</div>
+                    <div class="arch-arrow">&#8594;</div>
+                    <div class="arch-box">Ejecuta los 4 stages</div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        Jenkinsfile &mdash; bloque raíz + Checkout
+                    </div>
+                    <pre><code><span class="kw">pipeline</span> {
+    <span class="kw">agent</span> any          <span class="cm">// ejecutar en cualquier nodo disponible</span>
+
+    <span class="kw">environment</span> {
+        IMAGE_NAME = <span class="st">"tu-usuario/devops-taskapi"</span>  <span class="cm">// ← cambia tu-usuario</span>
+    }
+
+    <span class="kw">triggers</span> {
+        <span class="fn">pollSCM</span>(<span class="st">'H/5 * * * *'</span>)   <span class="cm">// SCM polling cada ~5 min</span>
+    }
+
+    <span class="kw">stages</span> {
+
+        <span class="kw">stage</span>(<span class="st">'Checkout'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">checkout</span> scm    <span class="cm">// clona la rama configurada en el job</span>
+            }
+        }
+
+        <span class="cm">// ... stages siguientes (Test, Build, Push)</span>
+    }
+
+    <span class="cm">// ... bloque post</span>
+}</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>H/5 * * * *</code> &mdash; SCM Polling con hash</strong><br>
+                    El símbolo <code>H</code> distribuye los jobs uniformemente dentro del intervalo.
+                    Así, si hay 20 pipelines configurados con <code>H/5</code>, Jenkins no los ejecuta
+                    todos al mismo minuto, evitando picos de carga. Es una <em>best practice</em>
+                    frente a usar <code>*/5 * * * *</code> exacto.
+                </div>
+
+            </div>
+        </div><!-- /paso11 -->
+
+        <!-- ════════════════════ PASO 12 ════════════════════ -->
+        <div class="step-card" id="paso12">
+            <div class="step-header s5">
+                <div class="step-num">12</div>
+                <div class="step-header-text">
+                    <h3>Stage Test &mdash; pytest + reporte JUnit XML</h3>
+                    <div class="step-desc">Entorno virtual, pip install silencioso y archivo test-report.xml</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El stage <em>Test</em> crea un entorno virtual de Python dentro del workspace de Jenkins,
+                    instala las dependencias y ejecuta pytest con salida JUnit XML. El paso
+                    <code>junit</code> del bloque <code>post</code> publica el informe en la UI de Jenkins.
+                </p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        Jenkinsfile &mdash; stage Test
+                    </div>
+                    <pre><code>        <span class="kw">stage</span>(<span class="st">'Test'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">sh</span> <span class="st">'''
+                    python3 -m venv .venv
+                    . .venv/bin/activate
+                    pip install --quiet -r requirements.txt
+                    pytest tests/ -v --junit-xml=test-report.xml
+                '''</span>
+            }
+            <span class="kw">post</span> {
+                <span class="kw">always</span> {
+                    <span class="fn">junit</span> <span class="st">'test-report.xml'</span>   <span class="cm">// archivar en Jenkins UI</span>
+                }
+            }
+        }</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>--junit-xml</code> y el paso <code>junit</code></strong><br>
+                    <ul style="margin: 8px 0 0 18px;">
+                        <li><code>pytest --junit-xml=test-report.xml</code> genera un XML compatible con el
+                        estándar JUnit (origen: Java, adoptado por la mayoría de los CI servers).</li>
+                        <li>El paso <code>junit 'test-report.xml'</code> lee el archivo y publica los
+                        resultados en la página del build: gráficas de tendencia, detalle de fallos, etc.</li>
+                        <li>Está dentro de <code>post { always { ... } }</code> para que el informe
+                        se publique <em>aunque el stage falle</em>.</li>
+                    </ul>
+                </div>
+
+                <h3>Salida esperada en la consola Jenkins</h3>
+                <div class="test-results">
+<span class="t-dim">+ python3 -m venv .venv</span>
+<span class="t-dim">+ . .venv/bin/activate</span>
+<span class="t-dim">+ pip install --quiet -r requirements.txt</span>
+<span class="t-info">+ pytest tests/ -v --junit-xml=test-report.xml</span>
+<span class="t-dim">========================= test session starts ==========================</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_health_check</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_crear_tarea</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_crear_tarea_sin_descripcion</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_listar_tareas_vacia</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_listar_tareas</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_get_task_existente</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_get_task_no_existente</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_update_task</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_update_task_no_existente</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_eliminar_tarea</span>
+<span class="t-pass">PASSED tests/test_tasks.py::test_eliminar_tarea_no_existente</span>
+<span class="t-dim">========================== </span><span class="t-pass">11 passed</span><span class="t-dim"> in 0.87s ===========================</span>
+                </div>
+
+            </div>
+        </div><!-- /paso12 -->
+
+        <!-- ════════════════════ PASO 13 ════════════════════ -->
+        <div class="step-card" id="paso13">
+            <div class="step-header s6">
+                <div class="step-num">13</div>
+                <div class="step-header-text">
+                    <h3>Stage Build &mdash; docker build + tag :latest</h3>
+                    <div class="step-desc">Imagen versionada con BUILD_NUMBER y alias latest</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El stage <em>Build</em> construye la imagen Docker desde el <code>Dockerfile</code>
+                    de la raíz y genera dos etiquetas: una versionada con <code>BUILD_NUMBER</code>
+                    y el alias <code>latest</code>.
+                </p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        Jenkinsfile &mdash; stage Build
+                    </div>
+                    <pre><code>        <span class="kw">stage</span>(<span class="st">'Build'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">sh</span> <span class="st">"docker build -t </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> ."</span>
+                <span class="fn">sh</span> <span class="st">"docker tag  </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> </span><span class="dec">${IMAGE_NAME}</span><span class="st">:latest"</span>
+            }
+        }</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>BUILD_NUMBER</code></strong><br>
+                    Variable de entorno propia de Jenkins. Se incrementa automáticamente con cada
+                    ejecución del pipeline (1, 2, 3...). Usar este número como etiqueta de imagen
+                    permite tener un historial trazable: cada imagen en Docker Hub corresponde
+                    exactamente a un build de Jenkins.
+                    <br><br>
+                    <strong>Ejemplo:</strong> build #5 produce
+                    <code>tu-usuario/devops-taskapi:5</code> y
+                    <code>tu-usuario/devops-taskapi:latest</code>.
+                </div>
+
+            </div>
+        </div><!-- /paso13 -->
+
+        <!-- ════════════════════ PASO 14 ════════════════════ -->
+        <div class="step-card" id="paso14">
+            <div class="step-header s7">
+                <div class="step-num">14</div>
+                <div class="step-header-text">
+                    <h3>Stage Push &mdash; withCredentials + docker login seguro</h3>
+                    <div class="step-desc">Credenciales inyectadas en memoria, password por stdin</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El stage <em>Push</em> publica ambas etiquetas en Docker Hub.
+                    Las credenciales <strong>nunca aparecen en los logs</strong> gracias a
+                    <code>withCredentials</code>, y la contraseña se pasa por stdin para evitar
+                    que quede en la lista de procesos del sistema.
+                </p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        Jenkinsfile &mdash; stage Push
+                    </div>
+                    <pre><code>        <span class="kw">stage</span>(<span class="st">'Push'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">withCredentials</span>([<span class="fn">usernamePassword</span>(
+                    credentialsId: <span class="st">'dockerhub-creds'</span>,
+                    usernameVariable: <span class="st">'DOCKER_USER'</span>,
+                    passwordVariable: <span class="st">'DOCKER_PASS'</span>
+                )]) {
+                    <span class="fn">sh</span> <span class="st">'''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        docker push ${IMAGE_NAME}:latest
+                    '''</span>
+                }
+            }
+        }</code></pre>
+                </div>
+
+                <h3>Bloque post del pipeline completo</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        Jenkinsfile &mdash; bloque post
+                    </div>
+                    <pre><code>    <span class="kw">post</span> {
+        <span class="kw">always</span> {
+            <span class="fn">sh</span> <span class="st">'docker logout || true'</span>   <span class="cm">// cerrar sesión siempre</span>
+            <span class="fn">cleanWs</span>()                    <span class="cm">// limpiar workspace</span>
+        }
+        <span class="kw">success</span> {
+            <span class="fn">echo</span> <span class="st">"Pipeline OK — imagen </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> publicada"</span>
+        }
+        <span class="kw">failure</span> {
+            <span class="fn">echo</span> <span class="st">"Pipeline FAILED en build #</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> — revisar logs"</span>
+        }
+    }</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>--password-stdin</code> vs <code>-p $PASS</code></strong><br>
+                    Pasar la contraseña como argumento <code>-p</code> la expone en el output de
+                    <code>ps aux</code> (lista de procesos) mientras el proceso está activo.
+                    Con <code>--password-stdin</code>, la contraseña viaja por la entrada estándar
+                    y nunca aparece en el historial ni en los logs de Jenkins.
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>cleanWs()</code></strong><br>
+                    Borra el directorio del workspace de Jenkins al finalizar cada build.
+                    Evita acumulación de archivos entre builds (artefactos, cachés, DBs de test)
+                    y reduce el uso de disco en el servidor CI.
+                </div>
+
+            </div>
+        </div><!-- /paso14 -->
+
+        <!-- ════════════════════ PASO 15 ════════════════════ -->
+        <div class="step-card" id="paso15">
+            <div class="step-header s8">
+                <div class="step-num">15</div>
+                <div class="step-header-text">
+                    <h3>Configurar job en Jenkins + SCM Polling</h3>
+                    <div class="step-desc">New Item → Pipeline from SCM → GitHub URL + pollSCM</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    Con el Jenkinsfile commiteado al repositorio, crea el job en Jenkins para
+                    que lo lea automáticamente en cada cambio.
+                </p>
+
+                <ol class="ui-steps">
+                    <li>
+                        Menú lateral &rarr; <strong>New Item</strong>.
+                        Escribe un nombre (p. ej. <code>devops-taskapi</code>),
+                        elige <strong>Pipeline</strong> y haz clic en <em>OK</em>.
+                    </li>
+                    <li>
+                        En la sección <strong>Build Triggers</strong>, marca
+                        <em>Poll SCM</em> y escribe el schedule:
+                        <div class="code-block" style="margin: 8px 0;">
+                            <pre><code>H/5 * * * *</code></pre>
+                        </div>
+                    </li>
+                    <li>
+                        En la sección <strong>Pipeline</strong>, selecciona
+                        <em>Pipeline script from SCM</em>.<br>
+                        &bull; <strong>SCM</strong>: Git<br>
+                        &bull; <strong>Repository URL</strong>: la URL de tu repositorio en GitHub<br>
+                        &bull; <strong>Branch</strong>: <code>*/main</code><br>
+                        &bull; <strong>Script Path</strong>: <code>Jenkinsfile</code>
+                    </li>
+                    <li>
+                        Haz clic en <strong>Save</strong>.
+                    </li>
+                    <li>
+                        Ejecuta el primer build manualmente: <strong>Build Now</strong>.
+                    </li>
+                </ol>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; Actualiza <code>IMAGE_NAME</code> en el Jenkinsfile</strong><br>
+                    Antes de hacer push, edita la variable de entorno en <code>Jenkinsfile</code>:
+                    <div class="code-block" style="margin: 8px 0;">
+                        <pre><code><span class="kw">environment</span> {
+    IMAGE_NAME = <span class="st">"<strong>tu-usuario-real</strong>/devops-taskapi"</span>
+}</code></pre>
+                    </div>
+                    Reemplaza <code>tu-usuario</code> por tu nombre de usuario en Docker Hub.
+                </div>
+
+            </div>
+        </div><!-- /paso15 -->
+
+        <!-- ════════════════════ VERIFICACIÓN ════════════════════ -->
+        <hr class="divider">
+        <h2 id="verificacion">&#9989; Verificación completa del pipeline</h2>
+
+        <p>
+            Después del primer build exitoso, confirma los tres artefactos del pipeline:
+            el reporte de tests en Jenkins, la vista de stages y la imagen publicada en Docker Hub.
+        </p>
+
+        <h3>1. Vista de stages en Jenkins</h3>
+        <div class="test-results">
+<span class="t-info">Pipeline devops-taskapi #1</span>
+<span class="t-dim">─────────────────────────────────────────────────────────────</span>
+<span class="t-pass"> ✓ Checkout    </span><span class="t-dim">1s  — clonado desde GitHub (main)</span>
+<span class="t-pass"> ✓ Test        </span><span class="t-dim">8s  — 11 tests passed, test-report.xml archivado</span>
+<span class="t-pass"> ✓ Build       </span><span class="t-dim">32s — imagen tu-usuario/devops-taskapi:1 construida</span>
+<span class="t-pass"> ✓ Push        </span><span class="t-dim">12s — :1 y :latest publicadas en Docker Hub</span>
+<span class="t-dim">─────────────────────────────────────────────────────────────</span>
+<span class="t-pass">Pipeline completado — duración total: 53s</span>
+        </div>
+
+        <h3>2. Reporte JUnit en la UI de Jenkins</h3>
+        <div class="test-results">
+<span class="t-info">Test Result — build #1</span>
+<span class="t-dim">─────────────────────────────────────────────────────────────</span>
+<span class="t-pass">All Tests (11)</span>          <span class="t-pass">11 passed</span><span class="t-dim">, 0 failed, 0 skipped</span>
+<span class="t-dim">  tests.test_tasks</span>
+<span class="t-pass">    ✓ test_health_check</span>
+<span class="t-pass">    ✓ test_crear_tarea</span>
+<span class="t-pass">    ✓ test_crear_tarea_sin_descripcion</span>
+<span class="t-pass">    ✓ test_listar_tareas_vacia</span>
+<span class="t-pass">    ✓ test_listar_tareas</span>
+<span class="t-pass">    ✓ test_get_task_existente</span>
+<span class="t-pass">    ✓ test_get_task_no_existente</span>
+<span class="t-pass">    ✓ test_update_task</span>
+<span class="t-pass">    ✓ test_update_task_no_existente</span>
+<span class="t-pass">    ✓ test_eliminar_tarea</span>
+<span class="t-pass">    ✓ test_eliminar_tarea_no_existente</span>
+        </div>
+
+        <h3>3. Verificar imagen en Docker Hub</h3>
+
+        <div class="code-block">
+            <div class="code-header">
+                <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                terminal
+            </div>
+            <pre><code><span class="cm"># Verificar que la imagen existe y se puede ejecutar localmente:</span>
+<span class="cmd">docker pull tu-usuario/devops-taskapi:latest</span>
+<span class="cmd">docker run --rm -p 8000:8000 tu-usuario/devops-taskapi:latest</span>
+
+<span class="cm"># En otra terminal:</span>
+<span class="cmd">curl http://localhost:8000/health</span>
+<span class="out">{"status":"ok"}</span></code></pre>
+        </div>
+
+        <div class="success-box">
+            <strong>&#127881; Semana 2 completada</strong><br>
+            El pipeline CI está operativo: cada <code>git push</code> dispara automáticamente
+            tests, construcción de imagen y publicación en Docker Hub sin intervención manual.
+            En la <strong>Semana 3</strong> añadiremos el stage <em>Deploy</em> para desplegar
+            la imagen en un cluster Kubernetes (Docker Desktop).
+        </div>
+
+        <hr class="divider">
+        <h2>&#128196; Jenkinsfile completo</h2>
+
+        <p>Referencia rápida del archivo completo tal como queda en el repositorio:</p>
+
+        <div class="code-block">
+            <div class="code-header">
+                <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                Jenkinsfile
+            </div>
+            <pre><code><span class="kw">pipeline</span> {
+    <span class="kw">agent</span> any
+
+    <span class="kw">environment</span> {
+        IMAGE_NAME = <span class="st">"tu-usuario/devops-taskapi"</span>
+    }
+
+    <span class="kw">triggers</span> {
+        <span class="fn">pollSCM</span>(<span class="st">'H/5 * * * *'</span>)
+    }
+
+    <span class="kw">stages</span> {
+
+        <span class="kw">stage</span>(<span class="st">'Checkout'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">checkout</span> scm
+            }
+        }
+
+        <span class="kw">stage</span>(<span class="st">'Test'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">sh</span> <span class="st">'''
+                    python3 -m venv .venv
+                    . .venv/bin/activate
+                    pip install --quiet -r requirements.txt
+                    pytest tests/ -v --junit-xml=test-report.xml
+                '''</span>
+            }
+            <span class="kw">post</span> {
+                <span class="kw">always</span> {
+                    <span class="fn">junit</span> <span class="st">'test-report.xml'</span>
+                }
+            }
+        }
+
+        <span class="kw">stage</span>(<span class="st">'Build'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">sh</span> <span class="st">"docker build -t </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> ."</span>
+                <span class="fn">sh</span> <span class="st">"docker tag  </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> </span><span class="dec">${IMAGE_NAME}</span><span class="st">:latest"</span>
+            }
+        }
+
+        <span class="kw">stage</span>(<span class="st">'Push'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">withCredentials</span>([<span class="fn">usernamePassword</span>(
+                    credentialsId: <span class="st">'dockerhub-creds'</span>,
+                    usernameVariable: <span class="st">'DOCKER_USER'</span>,
+                    passwordVariable: <span class="st">'DOCKER_PASS'</span>
+                )]) {
+                    <span class="fn">sh</span> <span class="st">'''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        docker push ${IMAGE_NAME}:latest
+                    '''</span>
+                }
+            }
+        }
+    }
+
+    <span class="kw">post</span> {
+        <span class="kw">always</span> {
+            <span class="fn">sh</span> <span class="st">'docker logout || true'</span>
+            <span class="fn">cleanWs</span>()
+        }
+        <span class="kw">success</span> {
+            <span class="fn">echo</span> <span class="st">"Pipeline OK — imagen </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> publicada en Docker Hub"</span>
+        }
+        <span class="kw">failure</span> {
+            <span class="fn">echo</span> <span class="st">"Pipeline FAILED en build #</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> — revisar logs"</span>
+        }
+    }
+}</code></pre>
+        </div>
+
+    </div><!-- /container -->
+</main>
+
+<footer class="main-footer">
+    <div class="container">
+        <p style="opacity:0.7; font-size:0.9em;">DevOps Task Manager API &mdash; Material de aprendizaje</p>
+        <div class="footer-links">
+            <a href="overview.html">&#127968; Inicio</a>
+            <a href="week1.html">&#128013; Semana 1 &mdash; App + Docker</a>
+            <a href="week2.html">&#128308; Semana 2 &mdash; Jenkins CI</a>
+            <a href="week3.html">&#9729;&#65039; Semana 3 &mdash; Kubernetes</a>
+        </div>
+    </div>
+</footer>
+
+<button id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8679;</button>
+
+<script>
+    window.addEventListener('scroll', () => {
+        document.getElementById('scrollTopBtn').style.display =
+            window.scrollY > 300 ? 'block' : 'none';
+    });
+</script>
+
+</body>
+</html>

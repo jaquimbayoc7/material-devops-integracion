@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Tests
+tests/
+.pytest_cache/
+test-report.xml
+.coverage
+htmlcov/
+
+# SQLite local
+*.db
+*.sqlite
+*.sqlite3
+
+# CI / infra (no van en la imagen de producción)
+jenkins/
+k8s/
+Jenkinsfile
+
+# Documentación y material del curso
+*.html
+*.md
+PLAN.md
+README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskapi-service
+  namespace: devops-project
+  labels:
+    app: taskapi
+spec:
+  selector:
+    app: taskapi
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer

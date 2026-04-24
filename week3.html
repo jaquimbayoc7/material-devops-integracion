@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semana 3 — DevOps Task Manager API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary:   #1a1f36;
+            --secondary: #2d3561;
+            --k8s:       #326ce5;
+            --k8s-dark:  #2756c5;
+            --green:     #27ae60;
+            --accent:    #e94560;
+            --light-bg:  #f7f8fc;
+            --card-bg:   #ffffff;
+            --dark-text: #2c3e50;
+            --code-bg:   #1e2235;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; color: var(--dark-text); background: var(--light-bg); line-height: 1.8; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+        /* Header */
+        .main-header { background: linear-gradient(135deg, #1a237e 0%, #326ce5 60%, #00bcd4 100%); color: white; }
+        .top-bar { padding: 28px 0 16px; text-align: center; }
+        .breadcrumb { font-size: 0.85em; opacity: 0.8; margin-bottom: 8px; }
+        .breadcrumb a { color: rgba(255,255,255,0.85); text-decoration: none; }
+        .breadcrumb a:hover { color: white; }
+        .brand-name { font-size: 1.9em; font-weight: 700; margin: 6px 0 4px; }
+        .brand-sub  { font-size: 0.95em; opacity: 0.8; font-weight: 300; }
+        .week-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); border-radius: 30px; padding: 6px 20px; font-size: 0.85em; font-weight: 600; margin-top: 12px; }
+        .dot-cyan { width: 9px; height: 9px; background: #00e5ff; border-radius: 50%; display: inline-block; }
+
+        /* Nav */
+        .step-nav { background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.1); padding: 12px 0; overflow-x: auto; }
+        .step-nav ul { list-style: none; display: flex; gap: 4px; min-width: max-content; padding: 0 16px; }
+        .step-nav a { color: rgba(255,255,255,0.8); text-decoration: none; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: block; white-space: nowrap; }
+        .step-nav a:hover { background: rgba(255,255,255,0.15); color: white; }
+
+        /* Hero */
+        .hero { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: white; padding: 48px 36px; text-align: center; margin-bottom: 40px; }
+        .hero h1 { font-size: 1.9em; font-weight: 700; margin-bottom: 12px; }
+        .hero .lead { opacity: 0.88; max-width: 700px; margin: 0 auto 20px; font-size: 1.05em; }
+        .results-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 22px; }
+        .result-chip { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.28); border-radius: 10px; padding: 10px 22px; font-size: 0.95em; font-weight: 500; text-align: center; }
+        .result-chip .num { font-size: 1.5em; font-weight: 700; display: block; color: #00e5ff; }
+
+        /* Pipeline flow */
+        .pipeline-flow { display: flex; flex-wrap: wrap; gap: 0; align-items: center; justify-content: center; margin: 24px 0 10px; }
+        .pipe-stage { background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 10px 18px; font-size: 0.88em; font-weight: 600; text-align: center; color: white; white-space: nowrap; }
+        .pipe-stage.trigger { background: rgba(211,56,51,0.4); border-color: rgba(255,100,80,0.5); }
+        .pipe-stage.test    { background: rgba(39,174,96,0.3); border-color: rgba(39,174,96,0.5); }
+        .pipe-stage.build   { background: rgba(36,150,237,0.3); border-color: rgba(36,150,237,0.5); }
+        .pipe-stage.push    { background: rgba(224,90,40,0.4); border-color: rgba(224,90,40,0.5); }
+        .pipe-stage.deploy  { background: rgba(50,108,229,0.5); border-color: rgba(0,229,255,0.6); color: #00e5ff; }
+        .pipe-arrow { color: rgba(255,255,255,0.5); font-size: 1.3em; padding: 0 5px; }
+
+        /* Content */
+        .main-content { padding-bottom: 60px; }
+        h2 { color: var(--primary); font-size: 1.6em; margin: 50px 0 16px; padding-bottom: 10px; border-bottom: 3px solid var(--k8s); }
+        h3 { color: var(--secondary); font-size: 1.2em; margin: 26px 0 10px; }
+        p  { margin-bottom: 14px; }
+        ul, ol { margin-left: 22px; margin-bottom: 14px; }
+        li { margin-bottom: 7px; }
+        code { background: #e8ecf5; border-radius: 4px; padding: 2px 7px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #2756c5; }
+
+        /* Step cards */
+        .step-card { background: var(--card-bg); border: 1px solid #dde0ee; border-radius: 14px; margin: 30px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; }
+        .step-header { display: flex; align-items: center; gap: 16px; padding: 20px 28px; }
+        .step-header.s1 { background: linear-gradient(90deg, #1a237e, #326ce5); }
+        .step-header.s2 { background: linear-gradient(90deg, #1565c0, #1e88e5); }
+        .step-header.s3 { background: linear-gradient(90deg, #0277bd, #0288d1); }
+        .step-header.s4 { background: linear-gradient(90deg, #006064, #00838f); }
+        .step-header.s5 { background: linear-gradient(90deg, #00695c, #00897b); }
+        .step-header.s6 { background: linear-gradient(90deg, #558b2f, #689f38); }
+        .step-header.s7 { background: linear-gradient(90deg, #4527a0, #7e57c2); }
+        .step-num { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; font-size: 1.4em; font-weight: 700; color: white; flex-shrink: 0; }
+        .step-header-text { color: white; }
+        .step-header-text h3 { color: white; margin: 0 0 3px; font-size: 1.15em; }
+        .step-header-text .step-desc { opacity: 0.85; font-size: 0.9em; font-weight: 300; }
+        .step-body { padding: 26px 28px; }
+
+        /* Code blocks */
+        .code-block { background: var(--code-bg); border-radius: 10px; margin: 16px 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .code-header { background: rgba(255,255,255,0.07); padding: 10px 16px; font-size: 0.82em; font-family: 'Fira Code', monospace; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .code-header .dot-r { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
+        .code-header .dot-y { width: 11px; height: 11px; border-radius: 50%; background: #ffbd2e; }
+        .code-header .dot-g { width: 11px; height: 11px; border-radius: 50%; background: #28c840; }
+        .code-block pre { padding: 18px 20px; overflow-x: auto; }
+        .code-block code { background: transparent; color: #e2e8f0; font-size: 0.87em; line-height: 1.7; padding: 0; }
+        .kw  { color: #c792ea; }
+        .fn  { color: #82aaff; }
+        .st  { color: #c3e88d; }
+        .cm  { color: #546e7a; font-style: italic; }
+        .num { color: #f78c6c; }
+        .cls { color: #ffcb6b; }
+        .dec { color: #89ddff; }
+        .cmd { color: #89ddff; }
+        .out { color: #c3e88d; }
+        .key { color: #00e5ff; }
+        .val { color: #f78c6c; }
+        .hl  { background: rgba(255,255,255,0.06); display: block; }
+
+        /* Boxes */
+        .info-box    { background: linear-gradient(135deg, #e8f0fe, #d2e3fc); border-left: 5px solid var(--k8s); padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .warn-box    { background: linear-gradient(135deg, #fef9e7, #fdebd0); border-left: 5px solid #f39c12; padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .success-box { background: linear-gradient(135deg, #e8f8f5, #d5f5e3); border-left: 5px solid var(--green); padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .tip-box     { background: linear-gradient(135deg, #e0f7fa, #b2ebf2); border-left: 5px solid #00bcd4; padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .divider { border: none; border-top: 2px solid #e5e8f0; margin: 36px 0; }
+
+        /* File explorer */
+        .struct-panel { background: var(--code-bg); border-radius: 14px; overflow: hidden; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.07); }
+        .struct-hdr { background: rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 13px 20px; display: flex; align-items: center; gap: 8px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: rgba(255,255,255,0.8); }
+        .struct-hdr .dot-r { width:11px; height:11px; border-radius:50%; background:#ff5f57; flex-shrink:0; }
+        .struct-hdr .dot-y { width:11px; height:11px; border-radius:50%; background:#ffbd2e; flex-shrink:0; }
+        .struct-hdr .dot-g { width:11px; height:11px; border-radius:50%; background:#28c840; flex-shrink:0; }
+        .struct-hdr .hdr-title { color: white; font-weight: 600; margin-left: 4px; }
+        .struct-hdr .hdr-sub { margin-left: auto; font-size: 0.8em; opacity: 0.4; white-space: nowrap; }
+        .ftree-body { padding: 6px 0 10px; }
+        .ftree-row { display: flex; align-items: center; padding: 4px 16px; min-height: 30px; transition: background 0.12s; }
+        .ftree-row:hover { background: rgba(255,255,255,0.045); }
+        .ftree-row.ft-root { padding: 10px 16px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 2px; }
+        .ftree-row.ft-new  { background: rgba(50,108,229,0.08); }
+        .ftree-row.ft-new:hover { background: rgba(50,108,229,0.14); }
+        .ftree-sp { display: inline-flex; width: 18px; flex-shrink: 0; align-items: stretch; justify-content: center; font-family: 'Fira Code', monospace; font-size: 0.9em; color: rgba(255,255,255,0.13); }
+        .ftree-sp.vl::before { content: "│"; }
+        .ftree-conn { display: inline-flex; align-items: center; width: 30px; flex-shrink: 0; color: rgba(255,255,255,0.16); font-family: 'Fira Code', monospace; font-size: 0.87em; }
+        .ftree-icon { width: 22px; text-align: center; flex-shrink: 0; font-size: 0.9em; }
+        .ftree-name { font-family: 'Fira Code', monospace; font-size: 0.85em; padding: 0 4px; }
+        .ftree-name.is-root   { color: white; font-weight: 700; font-size: 0.9em; }
+        .ftree-name.is-dir    { color: #82aaff; font-weight: 600; }
+        .ftree-name.is-py     { color: #c3e88d; }
+        .ftree-name.is-docker { color: #89ddff; }
+        .ftree-name.is-yaml   { color: #ffcb6b; }
+        .ftree-name.is-md     { color: #f78c6c; }
+        .ftree-name.is-groovy { color: #ffd700; }
+        .ftree-name.is-new    { color: #00e5ff; }
+        .ftree-desc { font-size: 0.77em; font-family: 'Roboto', sans-serif; color: rgba(255,255,255,0.3); margin-left: 10px; font-style: italic; white-space: nowrap; }
+        .ftree-badge { display: inline-flex; align-items: center; border-radius: 5px; padding: 1px 9px; font-size: 0.72em; font-weight: 600; font-family: 'Roboto', sans-serif; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+        .bpw1  { background: rgba(39,174,96,0.15);   color: #82d8a0; border: 1px solid rgba(39,174,96,0.3); }
+        .bpw2  { background: rgba(211,56,51,0.15);   color: #ff9a9a; border: 1px solid rgba(211,56,51,0.3); }
+        .bp16  { background: rgba(26,35,126,0.3);    color: #82aaff; border: 1px solid rgba(50,108,229,0.5); }
+        .bp17  { background: rgba(21,101,192,0.25);  color: #89c6ff; border: 1px solid rgba(21,101,192,0.5); }
+        .bp18  { background: rgba(2,119,189,0.25);   color: #80d8ff; border: 1px solid rgba(2,119,189,0.5); }
+        .bp19  { background: rgba(0,96,100,0.25);    color: #80cbc4; border: 1px solid rgba(0,96,100,0.5); }
+        .bp20  { background: rgba(0,105,92,0.25);    color: #80cbc4; border: 1px solid rgba(0,105,92,0.5); }
+        .bp21  { background: rgba(85,139,47,0.25);   color: #aed581; border: 1px solid rgba(85,139,47,0.5); }
+        .struct-legend { border-top: 1px solid rgba(255,255,255,0.06); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 0.77em; color: rgba(255,255,255,0.35); font-family: 'Roboto', sans-serif; }
+
+        /* Terminal output */
+        .test-results { background: var(--code-bg); border-radius: 10px; padding: 20px; font-family: 'Fira Code', monospace; font-size: 0.86em; line-height: 1.9; margin: 16px 0; }
+        .t-pass { color: #c3e88d; }
+        .t-warn { color: #ffcb6b; }
+        .t-info { color: #89ddff; }
+        .t-dim  { color: #546e7a; }
+        .t-k8s  { color: #00e5ff; }
+
+        /* UI steps */
+        .ui-steps { counter-reset: ui-step; }
+        .ui-steps li { list-style: none; counter-increment: ui-step; margin-bottom: 12px; padding-left: 36px; position: relative; }
+        .ui-steps li::before { content: counter(ui-step); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; background: linear-gradient(135deg, #326ce5, #00bcd4); border-radius: 50%; color: white; font-size: 0.78em; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+        /* Arch boxes */
+        .arch-flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 18px 0; }
+        .arch-box { background: var(--card-bg); border: 1.5px solid #c0cae8; border-radius: 8px; padding: 10px 18px; font-size: 0.9em; font-weight: 500; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .arch-arrow { color: #8090b8; font-size: 1.3em; }
+        .arch-box.highlight { border-color: var(--k8s); background: #e8f0fe; color: var(--k8s); }
+
+        /* Footer */
+        .main-footer { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 36px 0; text-align: center; margin-top: 40px; }
+        .main-footer a { color: #fff9e6; text-decoration: none; font-weight: 500; }
+        .main-footer a:hover { color: #00e5ff; }
+        .footer-links { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-top: 12px; }
+        #scrollTopBtn { display: none; position: fixed; bottom: 22px; right: 22px; background: var(--secondary); color: white; border: none; padding: 14px 18px; font-size: 17px; border-radius: 50%; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.25); z-index: 99; }
+        #scrollTopBtn:hover { background: var(--k8s); }
+        @media (max-width: 600px) { .hero h1 { font-size: 1.4em; } .step-body { padding: 18px; } }
+    </style>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="container">
+        <div class="top-bar">
+            <div class="breadcrumb">
+                <a href="overview.html">&#127968; Inicio</a> &rsaquo; <strong>Semana 3</strong>
+            </div>
+            <div class="brand-name">&#9729;&#65039; Semana 3 &mdash; Kubernetes + Pipeline Completo</div>
+            <div class="brand-sub">DevOps Task Manager API &mdash; Despliegue en Kubernetes con pipeline CI/CD de 5 etapas</div>
+            <div class="week-badge"><span class="dot-cyan"></span> En Progreso &mdash; 7 tareas (pasos 16&ndash;22)</div>
+        </div>
+        <nav class="step-nav">
+            <ul>
+                <li><a href="#paso16">16. Namespace</a></li>
+                <li><a href="#paso17">17. Deployment</a></li>
+                <li><a href="#paso18">18. Service</a></li>
+                <li><a href="#paso19">19. ConfigMap</a></li>
+                <li><a href="#paso20">20. HPA</a></li>
+                <li><a href="#paso21">21. Stage Deploy</a></li>
+                <li><a href="#paso22">22. Validaci&oacute;n E2E</a></li>
+                <li><a href="#verificacion">&#9989; Verificaci&oacute;n</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="container">
+
+        <!-- HERO -->
+        <section class="hero">
+            <h1>&#9878; Pipeline CI/CD de cinco etapas</h1>
+            <p class="lead">
+                El pipeline ahora incluye un stage final <strong style="color:#00e5ff">Deploy</strong>:
+                aplica los manifiestos Kubernetes, actualiza la imagen en el Deployment y espera
+                a que el rollout se complete sin downtime &mdash; todo automáticamente tras cada
+                <code style="background:rgba(255,255,255,0.12);color:#ffd700">git push</code>.
+            </p>
+
+            <div class="pipeline-flow">
+                <div class="pipe-stage trigger">git push</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage">Checkout</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage test">Test</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage build">Build</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage push">Push</div>
+                <div class="pipe-arrow">&#8594;</div>
+                <div class="pipe-stage deploy">Deploy &#9650;</div>
+            </div>
+
+            <div class="results-row">
+                <div class="result-chip"><span class="num">5</span>stages del pipeline</div>
+                <div class="result-chip"><span class="num">5</span>manifiestos YAML</div>
+                <div class="result-chip"><span class="num">2&ndash;5</span>pods con HPA</div>
+                <div class="result-chip"><span class="num">0</span>downtime en rollout</div>
+            </div>
+        </section>
+
+        <!-- ESTRUCTURA -->
+        <h2>&#128193; Estructura tras la Semana 3</h2>
+
+        <div class="struct-panel">
+            <div class="struct-hdr">
+                <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                <span class="hdr-title">material-devops-integracion /</span>
+                <span class="hdr-sub">Explorer</span>
+            </div>
+            <div class="ftree-body">
+
+                <div class="ftree-row ft-root">
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-root">material-devops-integracion</span>
+                    <span class="ftree-desc">ra&iacute;z del proyecto</span>
+                </div>
+
+                <!-- app/ -->
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-dir">app/</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+
+                <!-- jenkins/ -->
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-dir">jenkins/</span>
+                    <span class="ftree-badge bpw2">Sem 2</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128003;</span>
+                    <span class="ftree-name is-docker">Dockerfile</span>
+                    <span class="ftree-desc">+ kubectl en Semana 3</span>
+                    <span class="ftree-badge bp21">Paso 21 &#128260;</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">└─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">docker-compose.yml</span>
+                    <span class="ftree-desc">+ mount kubeconfig</span>
+                    <span class="ftree-badge bp21">Paso 21 &#128260;</span>
+                </div>
+
+                <!-- k8s/ NEW -->
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-new">k8s/</span>
+                    <span class="ftree-desc">manifiestos Kubernetes</span>
+                    <span class="ftree-badge bp16">Pasos 16-20 &#10024;</span>
+                </div>
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">namespace.yaml</span>
+                    <span class="ftree-desc">devops-project</span>
+                    <span class="ftree-badge bp16">Paso 16 &#10024;</span>
+                </div>
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">deployment.yaml</span>
+                    <span class="ftree-desc">2 réplicas + probes</span>
+                    <span class="ftree-badge bp17">Paso 17 &#10024;</span>
+                </div>
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">service.yaml</span>
+                    <span class="ftree-desc">LoadBalancer puerto 80→8000</span>
+                    <span class="ftree-badge bp18">Paso 18 &#10024;</span>
+                </div>
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">configmap.yaml</span>
+                    <span class="ftree-desc">variables de entorno</span>
+                    <span class="ftree-badge bp19">Paso 19 &#10024;</span>
+                </div>
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-sp vl"></span><span class="ftree-conn">└─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">hpa.yaml</span>
+                    <span class="ftree-desc">HPA 2-5 pods al 60% CPU</span>
+                    <span class="ftree-badge bp20">Paso 20 &#10024;</span>
+                </div>
+
+                <!-- tests/ -->
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128193;</span>
+                    <span class="ftree-name is-dir">tests/</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+
+                <!-- root files -->
+                <div class="ftree-row ft-new">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-groovy">Jenkinsfile</span>
+                    <span class="ftree-desc">+ stage Deploy</span>
+                    <span class="ftree-badge bp21">Paso 21 &#128260;</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">├─</span>
+                    <span class="ftree-icon">&#128003;</span>
+                    <span class="ftree-name is-docker">Dockerfile</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span><span class="ftree-conn">└─</span>
+                    <span class="ftree-icon">&#128196;</span>
+                    <span class="ftree-name is-yaml">docker-compose.yml</span>
+                    <span class="ftree-badge bpw1">Sem 1</span>
+                </div>
+
+            </div>
+            <div class="struct-legend">
+                <span style="color:#00e5ff">&#9632;</span> Nuevo en Semana 3
+                &nbsp;&bull;&nbsp;
+                <span style="color:#ff9a9a">&#9632;</span> Modificado en Semana 3
+                &nbsp;&bull;&nbsp;
+                <span style="color:#82d8a0">&#9632;</span> Heredado de Semanas anteriores
+            </div>
+        </div>
+
+        <!-- ════════════════════ PASO 16 ════════════════════ -->
+        <div class="step-card" id="paso16">
+            <div class="step-header s1">
+                <div class="step-num">16</div>
+                <div class="step-header-text">
+                    <h3>Namespace <code style="background:rgba(255,255,255,0.15);color:white">devops-project</code></h3>
+                    <div class="step-desc">Aislamiento lógico de todos los recursos Kubernetes del proyecto</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    Un <strong>Namespace</strong> en Kubernetes es una partición lógica del cluster.
+                    Agrupa todos los recursos del proyecto (Deployment, Service, HPA, ConfigMap)
+                    y permite aplicar cuotas, políticas de red y RBAC de forma independiente.
+                </p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        k8s/namespace.yaml
+                    </div>
+                    <pre><code><span class="key">apiVersion</span>: <span class="val">v1</span>
+<span class="key">kind</span>: <span class="cls">Namespace</span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="st">devops-project</span>
+  <span class="key">labels</span>:
+    <span class="key">project</span>: <span class="st">devops-taskapi</span></code></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        terminal — aplicar y verificar
+                    </div>
+                    <pre><code><span class="cmd">kubectl apply -f k8s/namespace.yaml</span>
+<span class="out">namespace/devops-project created</span>
+
+<span class="cmd">kubectl get namespaces</span>
+<span class="out">NAME              STATUS   AGE
+devops-project    Active   5s
+default           Active   2d</span></code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Todos los recursos usan <code>namespace: devops-project</code></strong><br>
+                    El campo <code>metadata.namespace</code> debe estar presente en cada manifiesto
+                    para que <code>kubectl apply -f k8s/</code> los cree en el namespace correcto.
+                    Los comandos <code>kubectl get</code> también requieren el flag <code>-n devops-project</code>.
+                </div>
+
+            </div>
+        </div><!-- /paso16 -->
+
+        <!-- ════════════════════ PASO 17 ════════════════════ -->
+        <div class="step-card" id="paso17">
+            <div class="step-header s2">
+                <div class="step-num">17</div>
+                <div class="step-header-text">
+                    <h3>Deployment &mdash; 2 réplicas + liveness &amp; readiness probes</h3>
+                    <div class="step-desc">Alta disponibilidad con health checks automáticos</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El <strong>Deployment</strong> define la especificación de los pods: imagen Docker,
+                    número de réplicas, recursos (CPU/memoria), y las probes de salud que Kubernetes
+                    usa para gestionar el ciclo de vida de los contenedores.
+                </p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        k8s/deployment.yaml
+                    </div>
+                    <pre><code><span class="key">apiVersion</span>: <span class="val">apps/v1</span>
+<span class="key">kind</span>: <span class="cls">Deployment</span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="st">taskapi</span>
+  <span class="key">namespace</span>: <span class="st">devops-project</span>
+<span class="key">spec</span>:
+  <span class="key">replicas</span>: <span class="num">2</span>
+  <span class="key">selector</span>:
+    <span class="key">matchLabels</span>:
+      <span class="key">app</span>: <span class="st">taskapi</span>
+  <span class="key">template</span>:
+    <span class="key">metadata</span>:
+      <span class="key">labels</span>:
+        <span class="key">app</span>: <span class="st">taskapi</span>
+    <span class="key">spec</span>:
+      <span class="key">containers</span>:
+        - <span class="key">name</span>: <span class="st">taskapi</span>
+          <span class="key">image</span>: <span class="st">tu-usuario/devops-taskapi:latest</span>
+          <span class="key">imagePullPolicy</span>: <span class="st">Always</span>
+          <span class="key">ports</span>:
+            - <span class="key">containerPort</span>: <span class="num">8000</span>
+          <span class="key">envFrom</span>:
+            - <span class="key">configMapRef</span>:
+                <span class="key">name</span>: <span class="st">taskapi-config</span>
+          <span class="key">resources</span>:
+            <span class="key">requests</span>:
+              <span class="key">cpu</span>: <span class="st">"100m"</span>
+              <span class="key">memory</span>: <span class="st">"128Mi"</span>
+            <span class="key">limits</span>:
+              <span class="key">cpu</span>: <span class="st">"250m"</span>
+              <span class="key">memory</span>: <span class="st">"256Mi"</span>
+          <span class="key">livenessProbe</span>:
+            <span class="key">httpGet</span>:
+              <span class="key">path</span>: <span class="st">/health</span>
+              <span class="key">port</span>: <span class="num">8000</span>
+            <span class="key">initialDelaySeconds</span>: <span class="num">15</span>
+            <span class="key">periodSeconds</span>: <span class="num">20</span>
+            <span class="key">failureThreshold</span>: <span class="num">3</span>
+          <span class="key">readinessProbe</span>:
+            <span class="key">httpGet</span>:
+              <span class="key">path</span>: <span class="st">/health</span>
+              <span class="key">port</span>: <span class="num">8000</span>
+            <span class="key">initialDelaySeconds</span>: <span class="num">5</span>
+            <span class="key">periodSeconds</span>: <span class="num">10</span>
+            <span class="key">failureThreshold</span>: <span class="num">3</span></code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Liveness vs Readiness probe</strong>
+                    <ul style="margin: 8px 0 0 18px;">
+                        <li><strong>livenessProbe</strong>: si falla 3 veces seguidas, Kubernetes <em>reinicia</em> el contenedor. Detecta procesos bloqueados.</li>
+                        <li><strong>readinessProbe</strong>: si falla, Kubernetes <em>retira el pod del balanceo</em> (no envía tráfico) pero no lo reinicia. El endpoint <code>GET /health</code> implementado en la Semana 1 sirve para ambas.</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>requests</code> vs <code>limits</code></strong><br>
+                    <code>requests</code> es lo que Kubernetes garantiza al pod en el momento del scheduling.
+                    <code>limits</code> es el máximo que puede consumir; si lo supera, el contenedor
+                    es throttled (CPU) o terminado (memoria). El HPA del paso 20 usa el valor de
+                    <code>requests.cpu</code> como base para calcular el porcentaje de utilización.
+                </div>
+
+            </div>
+        </div><!-- /paso17 -->
+
+        <!-- ════════════════════ PASO 18 ════════════════════ -->
+        <div class="step-card" id="paso18">
+            <div class="step-header s3">
+                <div class="step-num">18</div>
+                <div class="step-header-text">
+                    <h3>Service &mdash; LoadBalancer puerto 80 &rarr; 8000</h3>
+                    <div class="step-desc">Acceso externo estable independiente de qué pods están activos</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El <strong>Service</strong> expone el Deployment al exterior. Con Docker Desktop,
+                    el tipo <code>LoadBalancer</code> asigna automáticamente la IP <code>localhost</code>,
+                    por lo que la API queda accesible en <code>http://localhost/docs</code> sin
+                    configuración adicional.
+                </p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        k8s/service.yaml
+                    </div>
+                    <pre><code><span class="key">apiVersion</span>: <span class="val">v1</span>
+<span class="key">kind</span>: <span class="cls">Service</span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="st">taskapi-service</span>
+  <span class="key">namespace</span>: <span class="st">devops-project</span>
+  <span class="key">labels</span>:
+    <span class="key">app</span>: <span class="st">taskapi</span>
+<span class="key">spec</span>:
+  <span class="key">selector</span>:
+    <span class="key">app</span>: <span class="st">taskapi</span>      <span class="cm"># enruta a los pods con este label</span>
+  <span class="key">ports</span>:
+    - <span class="key">protocol</span>: <span class="st">TCP</span>
+      <span class="key">port</span>: <span class="num">80</span>          <span class="cm"># puerto externo</span>
+      <span class="key">targetPort</span>: <span class="num">8000</span>  <span class="cm"># puerto del contenedor</span>
+  <span class="key">type</span>: <span class="st">LoadBalancer</span></code></pre>
+                </div>
+
+                <div class="tip-box">
+                    <strong>&#128161; LoadBalancer en Docker Desktop</strong><br>
+                    Docker Desktop provisiona automáticamente la IP <code>localhost</code> para los
+                    Services de tipo LoadBalancer. En un cluster cloud (EKS, GKE, AKS) se asignaría
+                    una IP pública. En Minikube se usaría <code>minikube tunnel</code>.
+                </div>
+
+            </div>
+        </div><!-- /paso18 -->
+
+        <!-- ════════════════════ PASO 19 ════════════════════ -->
+        <div class="step-card" id="paso19">
+            <div class="step-header s4">
+                <div class="step-num">19</div>
+                <div class="step-header-text">
+                    <h3>ConfigMap &mdash; Variables de entorno de la aplicación</h3>
+                    <div class="step-desc">Configuración desacoplada del código y de la imagen Docker</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El <strong>ConfigMap</strong> almacena pares clave-valor que se inyectan como
+                    variables de entorno en los contenedores. Separa la configuración del código,
+                    lo que permite cambiar parámetros sin reconstruir la imagen.
+                </p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        k8s/configmap.yaml
+                    </div>
+                    <pre><code><span class="key">apiVersion</span>: <span class="val">v1</span>
+<span class="key">kind</span>: <span class="cls">ConfigMap</span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="st">taskapi-config</span>
+  <span class="key">namespace</span>: <span class="st">devops-project</span>
+<span class="key">data</span>:
+  <span class="key">PYTHONUNBUFFERED</span>: <span class="st">"1"</span>
+  <span class="key">APP_ENV</span>: <span class="st">"production"</span></code></pre>
+                </div>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; ConfigMap no es para secretos</strong><br>
+                    Las variables en un ConfigMap son texto plano visible para cualquiera con
+                    acceso al namespace. Para credenciales (contraseñas, tokens de API, claves)
+                    usa siempre un <code>Secret</code> de Kubernetes, que almacena los valores
+                    codificados en base64 y permite control de acceso más estricto.
+                </div>
+
+            </div>
+        </div><!-- /paso19 -->
+
+        <!-- ════════════════════ PASO 20 ════════════════════ -->
+        <div class="step-card" id="paso20">
+            <div class="step-header s5">
+                <div class="step-num">20</div>
+                <div class="step-header-text">
+                    <h3>HPA &mdash; Horizontal Pod Autoscaler (2&ndash;5 pods al 60% CPU)</h3>
+                    <div class="step-desc">Escalado automático en respuesta a la carga real del sistema</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El <strong>HPA</strong> monitorea el consumo de CPU de los pods y ajusta
+                    automáticamente el número de réplicas del Deployment. Mantiene al menos
+                    2 pods activos y puede escalar hasta 5 cuando la CPU supera el 60 % del
+                    valor de <code>requests.cpu</code>.
+                </p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        k8s/hpa.yaml
+                    </div>
+                    <pre><code><span class="key">apiVersion</span>: <span class="val">autoscaling/v2</span>
+<span class="key">kind</span>: <span class="cls">HorizontalPodAutoscaler</span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="st">taskapi-hpa</span>
+  <span class="key">namespace</span>: <span class="st">devops-project</span>
+<span class="key">spec</span>:
+  <span class="key">scaleTargetRef</span>:
+    <span class="key">apiVersion</span>: <span class="val">apps/v1</span>
+    <span class="key">kind</span>: <span class="st">Deployment</span>
+    <span class="key">name</span>: <span class="st">taskapi</span>
+  <span class="key">minReplicas</span>: <span class="num">2</span>
+  <span class="key">maxReplicas</span>: <span class="num">5</span>
+  <span class="key">metrics</span>:
+    - <span class="key">type</span>: <span class="st">Resource</span>
+      <span class="key">resource</span>:
+        <span class="key">name</span>: <span class="st">cpu</span>
+        <span class="key">target</span>:
+          <span class="key">type</span>: <span class="st">Utilization</span>
+          <span class="key">averageUtilization</span>: <span class="num">60</span></code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>autoscaling/v2</code> y métricas de CPU</strong><br>
+                    El HPA requiere que el cluster tenga el servidor de métricas (<em>metrics-server</em>)
+                    instalado. En Docker Desktop ya viene incluido. El cálculo es:
+                    <br><br>
+                    <code>réplicas deseadas = ceil(uso_actual_cpu / (requests.cpu × 0.60))</code>
+                    <br><br>
+                    Con <code>requests.cpu = 100m</code> y umbral del 60 %, el HPA escala hacia arriba
+                    cuando el uso supera los 60m (milli-CPUs) por pod en promedio.
+                </div>
+
+            </div>
+        </div><!-- /paso20 -->
+
+        <!-- ════════════════════ PASO 21 ════════════════════ -->
+        <div class="step-card" id="paso21">
+            <div class="step-header s6">
+                <div class="step-num">21</div>
+                <div class="step-header-text">
+                    <h3>Stage Deploy &mdash; kubectl apply + rollout sin downtime</h3>
+                    <div class="step-desc">Jenkins actualiza Kubernetes automáticamente tras cada build exitoso</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <p>
+                    El stage <em>Deploy</em> se añade al Jenkinsfile existente. Aplica todos los
+                    manifiestos de <code>k8s/</code>, actualiza la imagen del Deployment con el
+                    número de build exacto y espera a que el rollout termine antes de dar el stage
+                    por completado.
+                </p>
+
+                <h3>Cambios en jenkins/Dockerfile — añadir kubectl</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        jenkins/Dockerfile &mdash; bloque kubectl (nuevo)
+                    </div>
+                    <pre><code><span class="cm"># ── kubectl ─────────────────────────────────────────────────</span>
+<span class="kw">RUN</span> curl -fsSL <span class="st">"https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"</span> \
+        -o /usr/local/bin/kubectl &amp;&amp; \
+    chmod +x /usr/local/bin/kubectl</code></pre>
+                </div>
+
+                <h3>Cambios en jenkins/docker-compose.yml — montar kubeconfig</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        jenkins/docker-compose.yml
+                    </div>
+                    <pre><code><span class="kw">services</span>:
+  <span class="fn">jenkins</span>:
+    <span class="kw">build</span>: .
+    <span class="kw">volumes</span>:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.kube:/var/jenkins_home/.kube:<span class="dec">ro</span>   <span class="cm"># kubeconfig de Docker Desktop</span>
+
+<span class="kw">volumes</span>:
+  <span class="fn">jenkins_home</span>:</code></pre>
+                </div>
+
+                <h3>Stage Deploy en el Jenkinsfile</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        Jenkinsfile &mdash; stage Deploy
+                    </div>
+                    <pre><code>        <span class="kw">stage</span>(<span class="st">'Deploy'</span>) {
+            <span class="kw">steps</span> {
+                <span class="cm">// Aplica namespace, configmap, deployment, service y hpa</span>
+                <span class="fn">sh</span> <span class="st">'kubectl apply -f k8s/'</span>
+
+                <span class="cm">// Actualiza la imagen con el número de build exacto</span>
+                <span class="fn">sh</span> <span class="st">"kubectl set image deployment/taskapi taskapi=</span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> -n devops-project"</span>
+
+                <span class="cm">// Espera a que el rollout termine (timeout 2 min)</span>
+                <span class="fn">sh</span> <span class="st">'kubectl rollout status deployment/taskapi -n devops-project --timeout=120s'</span>
+            }
+        }</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>kubectl set image</code> vs editar deployment.yaml</strong><br>
+                    El manifiesto <code>deployment.yaml</code> tiene <code>image: tu-usuario/devops-taskapi:latest</code>
+                    como valor base. El comando <code>kubectl set image</code> sobrescribe ese valor
+                    en el cluster con la etiqueta versionada (<code>:${BUILD_NUMBER}</code>),
+                    garantizando que cada deploy usa la imagen exacta producida en ese build.
+                    El flag <code>imagePullPolicy: Always</code> del Deployment asegura que
+                    Kubernetes descarga la imagen nueva en cada reinicio de pod.
+                </div>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; Reconstruir la imagen Jenkins</strong><br>
+                    Después de modificar <code>jenkins/Dockerfile</code> y <code>jenkins/docker-compose.yml</code>,
+                    es necesario reconstruir el contenedor Jenkins:
+                    <div class="code-block" style="margin: 10px 0 0;">
+                        <pre><code><span class="cmd">cd jenkins</span>
+<span class="cmd">docker compose down</span>
+<span class="cmd">docker compose up -d --build</span></code></pre>
+                    </div>
+                </div>
+
+            </div>
+        </div><!-- /paso21 -->
+
+        <!-- ════════════════════ PASO 22 ════════════════════ -->
+        <div class="step-card" id="paso22">
+            <div class="step-header s7">
+                <div class="step-num">22</div>
+                <div class="step-header-text">
+                    <h3>Validación end-to-end del pipeline completo</h3>
+                    <div class="step-desc">commit &rarr; Jenkins &rarr; Docker Hub &rarr; Kubernetes activo</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <div class="arch-flow">
+                    <div class="arch-box">git push</div>
+                    <div class="arch-arrow">&#8594;</div>
+                    <div class="arch-box">Jenkins<br><small>5 stages</small></div>
+                    <div class="arch-arrow">&#8594;</div>
+                    <div class="arch-box">Docker Hub<br><small>imagen :N</small></div>
+                    <div class="arch-arrow">&#8594;</div>
+                    <div class="arch-box highlight">Kubernetes<br><small>devops-project</small></div>
+                    <div class="arch-arrow">&#8594;</div>
+                    <div class="arch-box">localhost/docs<br><small>sin downtime</small></div>
+                </div>
+
+                <ol class="ui-steps">
+                    <li>
+                        Haz un pequeño cambio en el código (p. ej. actualiza la descripción en
+                        <code>app/main.py</code>) y haz push a la rama <code>main</code>.
+                    </li>
+                    <li>
+                        Espera hasta 5 minutos a que el SCM polling detecte el cambio
+                        (o ejecuta <strong>Build Now</strong> manualmente).
+                    </li>
+                    <li>
+                        Confirma que los 5 stages terminan en verde en la vista de pipeline de Jenkins.
+                    </li>
+                    <li>
+                        Verifica los pods y el rollout:
+                        <div class="code-block" style="margin: 8px 0;">
+                            <pre><code><span class="cmd">kubectl get pods -n devops-project</span>
+<span class="cmd">kubectl get svc  -n devops-project</span>
+<span class="cmd">kubectl get hpa  -n devops-project</span></code></pre>
+                        </div>
+                    </li>
+                    <li>
+                        Accede a <strong>http://localhost/docs</strong> y confirma que
+                        la API responde con la versión actualizada.
+                    </li>
+                </ol>
+
+            </div>
+        </div><!-- /paso22 -->
+
+        <!-- ════════════════════ VERIFICACIÓN ════════════════════ -->
+        <hr class="divider">
+        <h2 id="verificacion">&#9989; Verificación completa de Kubernetes</h2>
+
+        <h3>1. Pods en estado Running</h3>
+        <div class="test-results">
+<span class="cmd">kubectl get pods -n devops-project</span>
+<span class="t-dim">NAME                       READY   STATUS    RESTARTS   AGE</span>
+<span class="t-pass">taskapi-6d8f7b9c4d-xk2p9   1/1     Running   0          2m</span>
+<span class="t-pass">taskapi-6d8f7b9c4d-zt8wr   1/1     Running   0          2m</span>
+        </div>
+
+        <h3>2. Service con EXTERNAL-IP</h3>
+        <div class="test-results">
+<span class="cmd">kubectl get svc -n devops-project</span>
+<span class="t-dim">NAME              TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE</span>
+<span class="t-k8s">taskapi-service   LoadBalancer   10.108.42.190   localhost     80:31200/TCP   3m</span>
+        </div>
+
+        <h3>3. HPA activo</h3>
+        <div class="test-results">
+<span class="cmd">kubectl get hpa -n devops-project</span>
+<span class="t-dim">NAME          REFERENCE             TARGETS   MINPODS   MAXPODS   REPLICAS   AGE</span>
+<span class="t-k8s">taskapi-hpa   Deployment/taskapi   18%/60%   2         5         2          4m</span>
+        </div>
+
+        <h3>4. Pipeline Jenkins — 5 stages en verde</h3>
+        <div class="test-results">
+<span class="t-info">Pipeline devops-taskapi #3</span>
+<span class="t-dim">──────────────────────────────────────────────────────────────</span>
+<span class="t-pass"> ✓ Checkout    </span><span class="t-dim">1s   — clonado desde GitHub (main)</span>
+<span class="t-pass"> ✓ Test        </span><span class="t-dim">9s   — 11 tests passed, test-report.xml archivado</span>
+<span class="t-pass"> ✓ Build       </span><span class="t-dim">34s  — imagen tu-usuario/devops-taskapi:3 construida</span>
+<span class="t-pass"> ✓ Push        </span><span class="t-dim">13s  — :3 y :latest en Docker Hub</span>
+<span class="t-pass"> ✓ Deploy      </span><span class="t-dim">18s  — rollout completado — 2/2 pods Ready</span>
+<span class="t-dim">──────────────────────────────────────────────────────────────</span>
+<span class="t-pass">Pipeline completado — duración total: 75s</span>
+        </div>
+
+        <h3>5. API accesible en http://localhost/docs</h3>
+        <div class="code-block">
+            <div class="code-header">
+                <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                terminal
+            </div>
+            <pre><code><span class="cmd">curl http://localhost/health</span>
+<span class="out">{"status":"ok"}</span>
+
+<span class="cmd">curl http://localhost/tasks/</span>
+<span class="out">[]</span></code></pre>
+        </div>
+
+        <div class="success-box">
+            <strong>&#127881; Proyecto Integrador completado</strong><br>
+            El pipeline CI/CD de 5 stages está operativo de extremo a extremo:
+            cada <code>git push</code> ejecuta los tests, construye la imagen, la publica en Docker Hub
+            y la despliega en Kubernetes sin downtime. El HPA escala la aplicación automáticamente
+            entre 2 y 5 pods según la demanda real de CPU.
+        </div>
+
+        <hr class="divider">
+        <h2>&#128196; Jenkinsfile completo (5 stages)</h2>
+
+        <div class="code-block">
+            <div class="code-header">
+                <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                Jenkinsfile
+            </div>
+            <pre><code><span class="kw">pipeline</span> {
+    <span class="kw">agent</span> any
+
+    <span class="kw">environment</span> {
+        IMAGE_NAME = <span class="st">"tu-usuario/devops-taskapi"</span>
+    }
+
+    <span class="kw">triggers</span> {
+        <span class="fn">pollSCM</span>(<span class="st">'H/5 * * * *'</span>)
+    }
+
+    <span class="kw">stages</span> {
+
+        <span class="kw">stage</span>(<span class="st">'Checkout'</span>) {
+            <span class="kw">steps</span> { <span class="fn">checkout</span> scm }
+        }
+
+        <span class="kw">stage</span>(<span class="st">'Test'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">sh</span> <span class="st">'''
+                    python3 -m venv .venv
+                    . .venv/bin/activate
+                    pip install --quiet -r requirements.txt
+                    pytest tests/ -v --junit-xml=test-report.xml
+                '''</span>
+            }
+            <span class="kw">post</span> {
+                <span class="kw">always</span> { <span class="fn">junit</span> <span class="st">'test-report.xml'</span> }
+            }
+        }
+
+        <span class="kw">stage</span>(<span class="st">'Build'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">sh</span> <span class="st">"docker build -t </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> ."</span>
+                <span class="fn">sh</span> <span class="st">"docker tag  </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> </span><span class="dec">${IMAGE_NAME}</span><span class="st">:latest"</span>
+            }
+        }
+
+        <span class="kw">stage</span>(<span class="st">'Push'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">withCredentials</span>([<span class="fn">usernamePassword</span>(
+                    credentialsId: <span class="st">'dockerhub-creds'</span>,
+                    usernameVariable: <span class="st">'DOCKER_USER'</span>,
+                    passwordVariable: <span class="st">'DOCKER_PASS'</span>
+                )]) {
+                    <span class="fn">sh</span> <span class="st">'''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        docker push ${IMAGE_NAME}:latest
+                    '''</span>
+                }
+            }
+        }
+
+        <span class="kw">stage</span>(<span class="st">'Deploy'</span>) {
+            <span class="kw">steps</span> {
+                <span class="fn">sh</span> <span class="st">'kubectl apply -f k8s/'</span>
+                <span class="fn">sh</span> <span class="st">"kubectl set image deployment/taskapi taskapi=</span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> -n devops-project"</span>
+                <span class="fn">sh</span> <span class="st">'kubectl rollout status deployment/taskapi -n devops-project --timeout=120s'</span>
+            }
+        }
+    }
+
+    <span class="kw">post</span> {
+        <span class="kw">always</span> {
+            <span class="fn">sh</span> <span class="st">'docker logout || true'</span>
+            <span class="fn">cleanWs</span>()
+        }
+        <span class="kw">success</span> {
+            <span class="fn">echo</span> <span class="st">"Pipeline OK — imagen </span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> publicada y desplegada en Kubernetes"</span>
+        }
+        <span class="kw">failure</span> {
+            <span class="fn">echo</span> <span class="st">"Pipeline FAILED en build #</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> — revisar logs"</span>
+        }
+    }
+}</code></pre>
+        </div>
+
+    </div><!-- /container -->
+</main>
+
+<footer class="main-footer">
+    <div class="container">
+        <p style="opacity:0.7; font-size:0.9em;">DevOps Task Manager API &mdash; Material de aprendizaje</p>
+        <div class="footer-links">
+            <a href="overview.html">&#127968; Inicio</a>
+            <a href="week1.html">&#128013; Semana 1 &mdash; App + Docker</a>
+            <a href="week2.html">&#128308; Semana 2 &mdash; Jenkins CI</a>
+            <a href="week3.html">&#9729;&#65039; Semana 3 &mdash; Kubernetes</a>
+        </div>
+    </div>
+</footer>
+
+<button id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8679;</button>
+
+<script>
+    window.addEventListener('scroll', () => {
+        document.getElementById('scrollTopBtn').style.display =
+            window.scrollY > 300 ? 'block' : 'none';
+    });
+</script>
+
+</body>
+</html>

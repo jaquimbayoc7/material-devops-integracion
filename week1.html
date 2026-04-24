@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semana 1 — DevOps Task Manager API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary:   #1a1f36;
+            --secondary: #2d3561;
+            --blue:      #0077b6;
+            --teal:      #00b4d8;
+            --green:     #27ae60;
+            --accent:    #e94560;
+            --light-bg:  #f7f8fc;
+            --card-bg:   #ffffff;
+            --dark-text: #2c3e50;
+            --code-bg:   #1e2235;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; color: var(--dark-text); background: var(--light-bg); line-height: 1.8; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+        /* Header */
+        .main-header { background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%); color: white; }
+        .top-bar { padding: 28px 0 16px; text-align: center; }
+        .breadcrumb { font-size: 0.85em; opacity: 0.8; margin-bottom: 8px; }
+        .breadcrumb a { color: rgba(255,255,255,0.85); text-decoration: none; }
+        .breadcrumb a:hover { color: white; }
+        .brand-name { font-size: 1.9em; font-weight: 700; margin: 6px 0 4px; }
+        .brand-sub  { font-size: 0.95em; opacity: 0.8; font-weight: 300; }
+        .week-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); border-radius: 30px; padding: 6px 20px; font-size: 0.85em; font-weight: 600; margin-top: 12px; }
+        .dot-green { width: 9px; height: 9px; background: #a9dfbf; border-radius: 50%; display: inline-block; }
+
+        /* Nav steps */
+        .step-nav { background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.1); padding: 12px 0; overflow-x: auto; }
+        .step-nav ul { list-style: none; display: flex; gap: 4px; min-width: max-content; padding: 0 16px; }
+        .step-nav a { color: rgba(255,255,255,0.8); text-decoration: none; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: block; white-space: nowrap; }
+        .step-nav a:hover { background: rgba(255,255,255,0.15); color: white; }
+
+        /* Hero */
+        .hero { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: white; padding: 48px 36px; text-align: center; margin-bottom: 40px; }
+        .hero h1 { font-size: 1.9em; font-weight: 700; margin-bottom: 12px; }
+        .hero .lead { opacity: 0.88; max-width: 700px; margin: 0 auto 20px; font-size: 1.05em; }
+        .results-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 22px; }
+        .result-chip { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.28); border-radius: 10px; padding: 10px 22px; font-size: 0.95em; font-weight: 500; text-align: center; }
+        .result-chip .num { font-size: 1.5em; font-weight: 700; display: block; color: #a9dfbf; }
+
+        /* Content */
+        .main-content { padding-bottom: 60px; }
+        h2 { color: var(--primary); font-size: 1.6em; margin: 50px 0 16px; padding-bottom: 10px; border-bottom: 3px solid var(--blue); }
+        h3 { color: var(--secondary); font-size: 1.2em; margin: 26px 0 10px; }
+        p  { margin-bottom: 14px; }
+        ul, ol { margin-left: 22px; margin-bottom: 14px; }
+        li { margin-bottom: 7px; }
+        code { background: #e8ecf5; border-radius: 4px; padding: 2px 7px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #c0392b; }
+
+        /* Step cards */
+        .step-card { background: var(--card-bg); border: 1px solid #dde0ee; border-radius: 14px; margin: 30px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; }
+        .step-header { display: flex; align-items: center; gap: 16px; padding: 20px 28px; }
+        .step-header.s1 { background: linear-gradient(90deg, #0077b6, #0096c7); }
+        .step-header.s2 { background: linear-gradient(90deg, #d33833, #e05a28); }
+        .step-header.s3 { background: linear-gradient(90deg, #27ae60, #1a9950); }
+        .step-header.s4 { background: linear-gradient(90deg, #8e44ad, #9b59b6); }
+        .step-header.s5 { background: linear-gradient(90deg, #2471a3, #1a5276); }
+        .step-header.s6 { background: linear-gradient(90deg, #2496ed, #1a7abf); }
+        .step-header.s7 { background: linear-gradient(90deg, #d4ac0d, #b7950b); }
+        .step-num { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; font-size: 1.4em; font-weight: 700; color: white; flex-shrink: 0; }
+        .step-header-text { color: white; }
+        .step-header-text h3 { color: white; margin: 0 0 3px; font-size: 1.15em; }
+        .step-header-text .step-desc { opacity: 0.85; font-size: 0.9em; font-weight: 300; }
+        .step-body { padding: 26px 28px; }
+
+        /* Code blocks */
+        .code-block { background: var(--code-bg); border-radius: 10px; margin: 16px 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .code-header { background: rgba(255,255,255,0.07); padding: 10px 16px; font-size: 0.82em; font-family: 'Fira Code', monospace; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .code-header .dot-r { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; } 
+        .code-header .dot-y { width: 11px; height: 11px; border-radius: 50%; background: #ffbd2e; }
+        .code-header .dot-g { width: 11px; height: 11px; border-radius: 50%; background: #28c840; }
+        .code-block pre { padding: 18px 20px; overflow-x: auto; }
+        .code-block code { background: transparent; color: #e2e8f0; font-size: 0.87em; line-height: 1.7; padding: 0; }
+        .kw   { color: #c792ea; }   /* keyword */
+        .fn   { color: #82aaff; }   /* function */
+        .st   { color: #c3e88d; }   /* string */
+        .cm   { color: #546e7a; font-style: italic; } /* comment */
+        .num  { color: #f78c6c; }   /* number */
+        .cls  { color: #ffcb6b; }   /* class */
+        .dec  { color: #89ddff; }   /* decorator */
+        .cmd  { color: #89ddff; }   /* shell command */
+        .out  { color: #c3e88d; }   /* output */
+        .err  { color: #ff5370; }   /* error/warning */
+        .hl   { background: rgba(255,255,255,0.06); display: block; }
+
+        /* Boxes */
+        .info-box    { background: linear-gradient(135deg, #e8f4fd, #d6eaf8); border-left: 5px solid var(--blue); padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .warn-box    { background: linear-gradient(135deg, #fef9e7, #fdebd0); border-left: 5px solid #f39c12; padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .success-box { background: linear-gradient(135deg, #e8f8f5, #d5f5e3); border-left: 5px solid var(--green); padding: 18px 22px; border-radius: 8px; margin: 18px 0; }
+        .divider { border: none; border-top: 2px solid #e5e8f0; margin: 36px 0; }
+
+        /* File explorer panel */
+        .struct-panel { background: var(--code-bg); border-radius: 14px; overflow: hidden; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.07); }
+        .struct-hdr { background: rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 13px 20px; display: flex; align-items: center; gap: 8px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: rgba(255,255,255,0.8); }
+        .struct-hdr .dot-r { width:11px; height:11px; border-radius:50%; background:#ff5f57; flex-shrink:0; }
+        .struct-hdr .dot-y { width:11px; height:11px; border-radius:50%; background:#ffbd2e; flex-shrink:0; }
+        .struct-hdr .dot-g { width:11px; height:11px; border-radius:50%; background:#28c840; flex-shrink:0; }
+        .struct-hdr .hdr-title { color: white; font-weight: 600; margin-left: 4px; }
+        .struct-hdr .hdr-sub { margin-left: auto; font-size: 0.8em; opacity: 0.4; white-space: nowrap; }
+        .ftree-body { padding: 6px 0 10px; }
+        .ftree-row { display: flex; align-items: center; padding: 4px 16px; min-height: 30px; transition: background 0.12s; }
+        .ftree-row:hover { background: rgba(255,255,255,0.045); }
+        .ftree-row.ft-root { padding: 10px 16px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 2px; }
+        .ftree-sp { display: inline-flex; width: 18px; flex-shrink: 0; align-items: stretch; justify-content: center; font-family: 'Fira Code', monospace; font-size: 0.9em; color: rgba(255,255,255,0.13); }
+        .ftree-sp.vl::before { content: "│"; }
+        .ftree-conn { display: inline-flex; align-items: center; width: 30px; flex-shrink: 0; color: rgba(255,255,255,0.16); font-family: 'Fira Code', monospace; font-size: 0.87em; }
+        .ftree-icon { width: 22px; text-align: center; flex-shrink: 0; font-size: 0.9em; }
+        .ftree-name { font-family: 'Fira Code', monospace; font-size: 0.85em; padding: 0 4px; }
+        .ftree-name.is-root   { color: white; font-weight: 700; font-size: 0.9em; }
+        .ftree-name.is-dir    { color: #82aaff; font-weight: 600; }
+        .ftree-name.is-py     { color: #c3e88d; }
+        .ftree-name.is-docker { color: #89ddff; }
+        .ftree-name.is-yaml   { color: #ffcb6b; }
+        .ftree-name.is-md     { color: #f78c6c; }
+        .ftree-name.is-git    { color: #546e7a; }
+        .ftree-name.is-txt    { color: #cdd6e0; }
+        .ftree-desc { font-size: 0.77em; font-family: 'Roboto', sans-serif; color: rgba(255,255,255,0.3); margin-left: 10px; font-style: italic; white-space: nowrap; }
+        .ftree-badge { display: inline-flex; align-items: center; border-radius: 5px; padding: 1px 9px; font-size: 0.72em; font-weight: 600; font-family: 'Roboto', sans-serif; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+        .bp1 { background: rgba(0,119,182,0.2); color: #82d8ff; border: 1px solid rgba(0,119,182,0.35); }
+        .bp2 { background: rgba(211,56,51,0.2); color: #ff9a9a; border: 1px solid rgba(211,56,51,0.35); }
+        .bp3 { background: rgba(39,174,96,0.2); color: #82d8a0; border: 1px solid rgba(39,174,96,0.35); }
+        .bp4 { background: rgba(142,68,173,0.2); color: #d7aefb; border: 1px solid rgba(142,68,173,0.35); }
+        .bp5 { background: rgba(36,113,200,0.2); color: #89c6ff; border: 1px solid rgba(36,113,200,0.35); }
+        .bp6 { background: rgba(36,150,237,0.2); color: #89ddff; border: 1px solid rgba(36,150,237,0.35); }
+        .bp7 { background: rgba(212,172,13,0.2); color: #ffe066; border: 1px solid rgba(212,172,13,0.35); }
+        .struct-legend { border-top: 1px solid rgba(255,255,255,0.06); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 0.77em; color: rgba(255,255,255,0.35); font-family: 'Roboto', sans-serif; }
+
+        /* Test results */
+        .test-results { background: var(--code-bg); border-radius: 10px; padding: 20px; font-family: 'Fira Code', monospace; font-size: 0.86em; line-height: 1.9; margin: 16px 0; }
+        .t-pass { color: #c3e88d; }
+        .t-warn { color: #ffcb6b; }
+        .t-info { color: #89ddff; }
+        .t-dim  { color: #546e7a; }
+
+        /* Endpoint table */
+        .ep-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        .ep-table th { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 10px 14px; text-align: left; }
+        .ep-table td { padding: 10px 14px; border-bottom: 1px solid #e2e5ef; }
+        .ep-table tr:nth-child(even) td { background: #f7f8fc; }
+        .ep-table tr:hover td { background: #eaf0fb; }
+        .method { display: inline-block; border-radius: 5px; padding: 2px 10px; font-size: 0.85em; font-weight: 700; font-family: 'Fira Code', monospace; }
+        .get    { background: #d5f5e3; color: #1a7a46; }
+        .post   { background: #d6eaf8; color: #1a5276; }
+        .put    { background: #fdebd0; color: #784212; }
+        .delete { background: #fadbd8; color: #7b241c; }
+
+        /* Architecture flow */
+        .arch-flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 18px 0; }
+        .arch-box { background: var(--card-bg); border: 1.5px solid #c0cae8; border-radius: 8px; padding: 10px 18px; font-size: 0.9em; font-weight: 500; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .arch-arrow { color: #8090b8; font-size: 1.3em; }
+        .arch-box.highlight { border-color: var(--blue); background: #e8f4fd; color: var(--blue); }
+
+        /* Footer */
+        .main-footer { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 36px 0; text-align: center; margin-top: 40px; }
+        .main-footer a { color: #fff9e6; text-decoration: none; font-weight: 500; }
+        .main-footer a:hover { color: #a9dfbf; }
+        .footer-links { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-top: 12px; }
+        #scrollTopBtn { display: none; position: fixed; bottom: 22px; right: 22px; background: var(--secondary); color: white; border: none; padding: 14px 18px; font-size: 17px; border-radius: 50%; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.25); z-index: 99; }
+        #scrollTopBtn:hover { background: var(--blue); }
+        @media (max-width: 600px) { .hero h1 { font-size: 1.4em; } .step-body { padding: 18px; } }
+    </style>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="container">
+        <div class="top-bar">
+            <div class="breadcrumb">
+                <a href="overview.html">&#127968; Inicio</a> &rsaquo; <strong>Semana 1</strong>
+            </div>
+            <div class="brand-name">&#128013; Semana 1 &mdash; App + Docker</div>
+            <div class="brand-sub">DevOps Task Manager API &mdash; Avance detallado paso a paso</div>
+            <div class="week-badge"><span class="dot-green"></span> Completada &mdash; 11/11 tests en verde</div>
+        </div>
+        <nav class="step-nav">
+            <ul>
+                <li><a href="#paso1">1. Scaffolding</a></li>
+                <li><a href="#paso2">2. Base de datos</a></li>
+                <li><a href="#paso3">3. FastAPI CRUD</a></li>
+                <li><a href="#paso4">4. Tests pytest</a></li>
+                <li><a href="#paso5">5. Dockerfile</a></li>
+                <li><a href="#paso6">6. docker-compose</a></li>
+                <li><a href="#paso7">7. Seed DB</a></li>
+                <li><a href="#verificacion">&#9989; Verificaci&oacute;n</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="container">
+
+        <div class="hero">
+            <h1>&#128736;&#65039; Semana 1: Construir la App y Contenerizarla</h1>
+            <p class="lead">
+                Objetivo: una API REST funcional con FastAPI, persistencia en SQLite,
+                suite de tests completa con pytest, y empaquetada en un Dockerfile multistage
+                lista para CI/CD.
+            </p>
+            <div class="results-row">
+                <div class="result-chip"><span class="num">11</span>tests en verde</div>
+                <div class="result-chip"><span class="num">5</span>endpoints CRUD</div>
+                <div class="result-chip"><span class="num">10</span>tareas en BD</div>
+                <div class="result-chip"><span class="num">2</span>etapas Docker</div>
+                <div class="result-chip"><span class="num">7</span>pasos completados</div>
+            </div>
+        </div>
+
+        <!-- Estructura final -->
+        <div class="struct-panel">
+            <div class="struct-hdr">
+                <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                <span class="hdr-title">material-devops-integracion /</span>
+                <span class="hdr-sub">Semana 1 &mdash; 15 archivos &middot; 4 carpetas</span>
+            </div>
+            <div class="ftree-body">
+
+                <div class="ftree-row ft-root">
+                    <span class="ftree-icon">&#128230;</span>
+                    <span class="ftree-name is-root">material-devops-integracion/</span>
+                    <span class="ftree-desc">ra&iacute;z del repositorio</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128194;</span>
+                    <span class="ftree-name is-dir">app/</span>
+                    <span class="ftree-desc">paquete principal de la API</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">__init__.py</span>
+                    <span class="ftree-badge bp1">Paso 1</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#9889;</span>
+                    <span class="ftree-name is-py">main.py</span>
+                    <span class="ftree-desc">entrypoint FastAPI &middot; /health endpoint</span>
+                    <span class="ftree-badge bp3">Paso 3</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128451;</span>
+                    <span class="ftree-name is-py">database.py</span>
+                    <span class="ftree-desc">SQLAlchemy ORM &middot; motor SQLite &middot; get_db()</span>
+                    <span class="ftree-badge bp2">Paso 2</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128203;</span>
+                    <span class="ftree-name is-py">models.py</span>
+                    <span class="ftree-desc">Pydantic: TaskCreate &middot; TaskUpdate &middot; TaskResponse</span>
+                    <span class="ftree-badge bp3">Paso 3</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-conn">&#9492;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128194;</span>
+                    <span class="ftree-name is-dir">routers/</span>
+                    <span class="ftree-desc">endpoints agrupados por recurso</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-sp"></span>
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">__init__.py</span>
+                    <span class="ftree-badge bp1">Paso 1</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-sp"></span>
+                    <span class="ftree-conn">&#9492;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128295;</span>
+                    <span class="ftree-name is-py">tasks.py</span>
+                    <span class="ftree-desc">CRUD: GET &middot; POST &middot; PUT &middot; DELETE /tasks</span>
+                    <span class="ftree-badge bp3">Paso 3</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#129514;</span>
+                    <span class="ftree-name is-dir">tests/</span>
+                    <span class="ftree-desc">suite de tests con pytest</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128013;</span>
+                    <span class="ftree-name is-py">__init__.py</span>
+                    <span class="ftree-badge bp1">Paso 1</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-sp vl"></span>
+                    <span class="ftree-conn">&#9492;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#129514;</span>
+                    <span class="ftree-name is-py">test_tasks.py</span>
+                    <span class="ftree-desc">11 tests &middot; BD aislada &middot; dependency override</span>
+                    <span class="ftree-badge bp4">Paso 4</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128051;</span>
+                    <span class="ftree-name is-docker">Dockerfile</span>
+                    <span class="ftree-desc">imagen multistage &middot; builder + runtime slim</span>
+                    <span class="ftree-badge bp5">Paso 5</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#9881;&#65039;</span>
+                    <span class="ftree-name is-yaml">docker-compose.yml</span>
+                    <span class="ftree-desc">entorno de desarrollo con hot-reload</span>
+                    <span class="ftree-badge bp6">Paso 6</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128230;</span>
+                    <span class="ftree-name is-txt">requirements.txt</span>
+                    <span class="ftree-desc">fastapi &middot; uvicorn &middot; sqlalchemy &middot; pytest &middot; httpx</span>
+                    <span class="ftree-badge bp1">Paso 1</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#127807;</span>
+                    <span class="ftree-name is-py">seed.py</span>
+                    <span class="ftree-desc">10 tareas iniciales &middot; flag --force</span>
+                    <span class="ftree-badge bp7">Paso 7</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-conn">&#9500;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128214;</span>
+                    <span class="ftree-name is-md">README.md</span>
+                    <span class="ftree-badge bp1">Paso 1</span>
+                </div>
+
+                <div class="ftree-row">
+                    <span class="ftree-conn">&#9492;&#9472;&#9472;</span>
+                    <span class="ftree-icon">&#128683;</span>
+                    <span class="ftree-name is-git">.gitignore</span>
+                    <span class="ftree-badge bp1">Paso 1</span>
+                </div>
+
+            </div>
+            <div class="struct-legend">
+                <span>Pasos de construcci&oacute;n:</span>
+                <span class="ftree-badge bp1">Paso 1</span> Scaffolding &nbsp;
+                <span class="ftree-badge bp2">Paso 2</span> Base de datos &nbsp;
+                <span class="ftree-badge bp3">Paso 3</span> FastAPI CRUD &nbsp;
+                <span class="ftree-badge bp4">Paso 4</span> Tests &nbsp;
+                <span class="ftree-badge bp5">Paso 5</span> Dockerfile &nbsp;
+                <span class="ftree-badge bp6">Paso 6</span> docker-compose &nbsp;
+                <span class="ftree-badge bp7">Paso 7</span> Seed DB
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- PASO 1 -->
+        <div class="step-card" id="paso1">
+            <div class="step-header s1">
+                <div class="step-num">1</div>
+                <div class="step-header-text">
+                    <h3>Scaffolding del repositorio</h3>
+                    <div class="step-desc">requirements.txt &middot; .gitignore &middot; README.md &middot; estructura de carpetas</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <p>Antes de escribir una sola l&iacute;nea de c&oacute;digo de la API, se define el esqueleto del proyecto: qu&eacute; dependencias necesitamos, qu&eacute; archivos ignorar en git y c&oacute;mo organizar los m&oacute;dulos.</p>
+
+                <h3>Dependencias — <code>requirements.txt</code></h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> requirements.txt</div>
+                    <pre><code>fastapi==0.115.0
+uvicorn==0.30.0
+sqlalchemy==2.0.30
+pytest==8.2.0
+httpx==0.27.0</code></pre>
+                </div>
+
+                <p>Cada dependencia tiene un rol concreto:</p>
+                <ul>
+                    <li><strong>fastapi</strong> — framework web para la API REST con validaci&oacute;n autom&aacute;tica y Swagger UI</li>
+                    <li><strong>uvicorn</strong> — servidor ASGI de alto rendimiento para correr FastAPI</li>
+                    <li><strong>sqlalchemy</strong> — ORM para persistir datos en SQLite sin escribir SQL crudo</li>
+                    <li><strong>pytest</strong> — runner de tests con fixtures y plugins</li>
+                    <li><strong>httpx</strong> — cliente HTTP utilizado por el <code>TestClient</code> de FastAPI en los tests</li>
+                </ul>
+
+                <h3>Instalaci&oacute;n en Windows con Python Launcher</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal (Windows — Python Launcher)</div>
+                    <pre><code><span class="cmd">py --version</span>
+<span class="out">Python 3.10.9</span>
+
+<span class="cmd">py -m pip install -r requirements.txt</span>
+<span class="out">Successfully installed fastapi-0.115.0 uvicorn-0.30.0 sqlalchemy-2.0.30 ...</span></code></pre>
+                </div>
+
+                <div class="warn-box">
+                    <strong>&#9888; Windows: usa <code>py</code>, no <code>python</code> ni <code>pip</code></strong><br>
+                    En este equipo, el Python Launcher (<code>py.exe</code>) es el &uacute;nico disponible en PATH.
+                    Todos los comandos de este proyecto usan <code>py -m pip</code>, <code>py -m pytest</code>, <code>py -m uvicorn</code>.
+                </div>
+
+                <h3>Inicializar git</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal</div>
+                    <pre><code><span class="cmd">git init</span>
+<span class="cmd">git add .</span>
+<span class="cmd">git commit -m "feat: Week 1 - FastAPI CRUD + Docker + pytest"</span></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 2 -->
+        <div class="step-card" id="paso2">
+            <div class="step-header s2">
+                <div class="step-num">2</div>
+                <div class="step-header-text">
+                    <h3>Capa de base de datos con SQLAlchemy</h3>
+                    <div class="step-desc">app/database.py &mdash; ORM, motor SQLite, sesi&oacute;n, modelo TaskDB</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <p>El archivo <code>app/database.py</code> centraliza toda la configuraci&oacute;n de persistencia. Usa SQLite como motor (no necesita servidor separado) y SQLAlchemy como ORM para mapear objetos Python a filas de la tabla <code>tasks</code>.</p>
+
+                <div class="arch-flow">
+                    <div class="arch-box">FastAPI router</div>
+                    <div class="arch-arrow">&rarr;</div>
+                    <div class="arch-box highlight">get_db()</div>
+                    <div class="arch-arrow">&rarr;</div>
+                    <div class="arch-box">SessionLocal</div>
+                    <div class="arch-arrow">&rarr;</div>
+                    <div class="arch-box">SQLite tasks.db</div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> app/database.py</div>
+                    <pre><code><span class="cm">"""Database engine, session factory, ORM model, and get_db dependency."""</span>
+<span class="kw">from</span> collections.abc <span class="kw">import</span> Generator
+
+<span class="kw">from</span> sqlalchemy <span class="kw">import</span> Boolean, Column, Integer, String, create_engine
+<span class="kw">from</span> sqlalchemy.orm <span class="kw">import</span> Session, declarative_base, sessionmaker
+
+DATABASE_URL = <span class="st">"sqlite:///./tasks.db"</span>
+
+engine = create_engine(DATABASE_URL, connect_args={<span class="st">"check_same_thread"</span>: <span class="kw">False</span>})
+SessionLocal = sessionmaker(autocommit=<span class="kw">False</span>, autoflush=<span class="kw">False</span>, bind=engine)
+Base = declarative_base()
+
+
+<span class="kw">class</span> <span class="cls">TaskDB</span>(Base):
+    __tablename__ = <span class="st">"tasks"</span>
+
+    id          = Column(Integer, primary_key=<span class="kw">True</span>, index=<span class="kw">True</span>)
+    title       = Column(String(<span class="num">200</span>), nullable=<span class="kw">False</span>)
+    description = Column(String(<span class="num">500</span>), nullable=<span class="kw">True</span>)
+    completed   = Column(Boolean, default=<span class="kw">False</span>)
+
+
+<span class="kw">def</span> <span class="fn">get_db</span>() -&gt; Generator[Session, <span class="kw">None</span>, <span class="kw">None</span>]:
+    db = SessionLocal()
+    <span class="kw">try</span>:
+        <span class="kw">yield</span> db
+    <span class="kw">finally</span>:
+        db.close()</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Por qu&eacute; <code>check_same_thread: False</code>:</strong><br>
+                    SQLite por defecto solo permite acceso desde el hilo que cre&oacute; la conexi&oacute;n.
+                    FastAPI usa threading, por lo que esta opci&oacute;n es necesaria para evitar errores en producci&oacute;n.
+                    En MySQL/PostgreSQL no aplica, pero es correcto para SQLite en desarrollo.
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; PEP 8 &mdash; orden de imports y anotaci&oacute;n de tipo:</strong><br>
+                    Los imports siguen el orden: stdlib &rarr; terceros &rarr; locales (PEP 8 &sect;Imports).
+                    <code>Generator[Session, None, None]</code> usa el tipo de <code>collections.abc</code> (PEP 585)
+                    en lugar de <code>typing.Generator</code>, disponible desde Python 3.9.
+                    La anotaci&oacute;n hace expl&iacute;cita la intenci&oacute;n de la funci&oacute;n para herramientas como mypy.
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Patr&oacute;n <code>yield</code> en <code>get_db()</code>:</strong><br>
+                    La funci&oacute;n es un generador. FastAPI la inyecta como dependencia en cada endpoint,
+                    abre la sesi&oacute;n, la cede al endpoint, y la cierra autom&aacute;ticamente en el bloque <code>finally</code>
+                    independientemente de si hubo excepci&oacute;n o no.
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 3 -->
+        <div class="step-card" id="paso3">
+            <div class="step-header s3">
+                <div class="step-num">3</div>
+                <div class="step-header-text">
+                    <h3>API REST con FastAPI — CRUD + /health</h3>
+                    <div class="step-desc">app/models.py &middot; app/routers/tasks.py &middot; app/main.py</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <h3>Modelos Pydantic — <code>app/models.py</code></h3>
+                <p>Los modelos definen y validan la estructura de datos que entran y salen de la API. Pydantic v2 valida autom&aacute;ticamente tipos, convierte datos y genera el esquema JSON para Swagger.</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> app/models.py</div>
+                    <pre><code><span class="cm">"""Pydantic schemas for request validation and response serialization."""</span>
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, ConfigDict
+
+
+<span class="kw">class</span> <span class="cls">TaskCreate</span>(BaseModel):
+    title: str
+    description: str | <span class="kw">None</span> = <span class="kw">None</span>
+
+
+<span class="kw">class</span> <span class="cls">TaskUpdate</span>(BaseModel):
+    title:       str  | <span class="kw">None</span> = <span class="kw">None</span>
+    description: str  | <span class="kw">None</span> = <span class="kw">None</span>
+    completed:   bool | <span class="kw">None</span> = <span class="kw">None</span>
+
+
+<span class="kw">class</span> <span class="cls">TaskResponse</span>(BaseModel):
+    id:          int
+    title:       str
+    description: str | <span class="kw">None</span> = <span class="kw">None</span>
+    completed:   bool
+
+    model_config = ConfigDict(from_attributes=<span class="kw">True</span>)  <span class="cm"># Pydantic v2: leer desde ORM objects</span></code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; PEP 604 &mdash; <code>X | None</code> en lugar de <code>Optional[X]</code>:</strong><br>
+                    Desde Python 3.10 (PEP 604), la sintaxis <code>str | None</code> es la forma preferida
+                    sobre <code>Optional[str]</code> de <code>typing</code>. Es m&aacute;s legible y no requiere importar
+                    <code>Optional</code>. Pydantic v2 soporta ambas formas, pero la nueva es la recomendada.
+                    <br><br>
+                    <strong>&#128161; <code>ConfigDict</code> vs <code>class Config</code>:</strong><br>
+                    En Pydantic v2, la forma recomendada es <code>model_config = ConfigDict(...)</code>.
+                    <code>class Config</code> sigue funcionando pero est&aacute; deprecada y se eliminar&aacute; en Pydantic v3.
+                </div>
+
+                <h3>Endpoints CRUD — <code>app/routers/tasks.py</code></h3>
+                <p>El router agrupa los 5 endpoints bajo el prefijo <code>/tasks</code>. Cada uno recibe la sesi&oacute;n de BD por inyecci&oacute;n de dependencias (<code>Depends(get_db)</code>).</p>
+
+                <table class="ep-table">
+                    <thead><tr><th>M&eacute;todo</th><th>Ruta</th><th>Descripci&oacute;n</th><th>HTTP Status</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="method get">GET</span></td><td><code>/tasks/</code></td><td>Listar todas las tareas</td><td>200</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/tasks/</code></td><td>Crear nueva tarea</td><td>201 Created</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/tasks/{id}</code></td><td>Obtener tarea por ID</td><td>200 / 404</td></tr>
+                        <tr><td><span class="method put">PUT</span></td><td><code>/tasks/{id}</code></td><td>Actualizar tarea (parcial)</td><td>200 / 404</td></tr>
+                        <tr><td><span class="method delete">DELETE</span></td><td><code>/tasks/{id}</code></td><td>Eliminar tarea</td><td>204 / 404</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> app/routers/tasks.py (fragmento)</div>
+                    <pre><code><span class="cm">"""CRUD endpoints for the /tasks resource."""</span>
+<span class="kw">from</span> fastapi <span class="kw">import</span> APIRouter, Depends, HTTPException
+<span class="kw">from</span> sqlalchemy.orm <span class="kw">import</span> Session
+
+<span class="kw">from</span> app.database <span class="kw">import</span> TaskDB, get_db
+<span class="kw">from</span> app.models <span class="kw">import</span> TaskCreate, TaskResponse, TaskUpdate
+
+router = APIRouter(prefix=<span class="st">"/tasks"</span>, tags=[<span class="st">"Tasks"</span>])
+
+
+<span class="dec">@router.get("/", response_model=list[TaskResponse])</span>  <span class="cm"># PEP 585: list[...] sin import</span>
+<span class="kw">def</span> <span class="fn">list_tasks</span>(db: Session = Depends(get_db)):
+    <span class="kw">return</span> db.query(TaskDB).all()
+
+
+<span class="dec">@router.post("/", response_model=TaskResponse, status_code=<span class="num">201</span>)</span>
+<span class="kw">def</span> <span class="fn">create_task</span>(task: TaskCreate, db: Session = Depends(get_db)):
+    db_task = TaskDB(title=task.title, description=task.description)
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    <span class="kw">return</span> db_task
+
+
+<span class="dec">@router.put("/{task_id}", response_model=TaskResponse)</span>
+<span class="kw">def</span> <span class="fn">update_task</span>(task_id: int, updates: TaskUpdate, db: Session = Depends(get_db)):
+    task = db.query(TaskDB).filter(TaskDB.id == task_id).first()
+    <span class="kw">if</span> task <span class="kw">is None</span>:
+        <span class="kw">raise</span> HTTPException(status_code=<span class="num">404</span>, detail=<span class="st">"Tarea no encontrada"</span>)
+    <span class="kw">for</span> field, value <span class="kw">in</span> updates.model_dump(exclude_unset=<span class="kw">True</span>).items():
+        setattr(task, field, value)  <span class="cm"># aplica solo los campos enviados</span>
+    db.commit()
+    db.refresh(task)
+    <span class="kw">return</span> task
+
+
+<span class="dec">@router.delete("/{task_id}", status_code=<span class="num">204</span>)</span>
+<span class="kw">def</span> <span class="fn">delete_task</span>(task_id: int, db: Session = Depends(get_db)):
+    task = db.query(TaskDB).filter(TaskDB.id == task_id).first()
+    <span class="kw">if</span> task <span class="kw">is None</span>:
+        <span class="kw">raise</span> HTTPException(status_code=<span class="num">404</span>, detail=<span class="st">"Tarea no encontrada"</span>)
+    db.delete(task)
+    db.commit()</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; PEP 585 &mdash; <code>list[T]</code> en lugar de <code>List[T]</code>:</strong><br>
+                    Desde Python 3.9 (PEP 585), los tipos gen&eacute;ricos built-in como <code>list</code>, <code>dict</code> y
+                    <code>tuple</code> pueden usarse directamente como tipos gen&eacute;ricos. Ya no es necesario
+                    importar <code>List</code> de <code>typing</code>. FastAPI y Pydantic v2 soportan esta sintaxis.
+                    <br><br>
+                    <strong>&#128161; <code>model_dump(exclude_unset=True)</code> + <code>setattr</code>:</strong><br>
+                    En lugar de tres <code>if field is not None</code> separados, iteramos solo sobre los
+                    campos que el cliente realmente envi&oacute; en el body (excluye los omitidos).
+                    Esto hace el c&oacute;digo escalable: si se agrega un campo nuevo al modelo,
+                    el endpoint lo aplica autom&aacute;ticamente sin modificar la l&oacute;gica.
+                </div>
+
+                <h3>Entrypoint — <code>app/main.py</code></h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> app/main.py</div>
+                    <pre><code><span class="cm">"""FastAPI application entry point."""</span>
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI
+
+<span class="kw">from</span> app.database <span class="kw">import</span> Base, engine
+<span class="kw">from</span> app.routers <span class="kw">import</span> tasks
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title=<span class="st">"DevOps Task Manager API"</span>,
+    description=<span class="st">"API REST de gesti&oacute;n de tareas &mdash; Proyecto Integrador DevOps"</span>,
+    version=<span class="st">"1.0.0"</span>,
+)
+
+app.include_router(tasks.router)
+
+
+<span class="dec">@app.get("/health", tags=[<span class="st">"Health"</span>])</span>
+<span class="kw">def</span> <span class="fn">health_check</span>():
+    <span class="cm">"""Endpoint de salud usado por liveness y readiness probes de Kubernetes."""</span>
+    <span class="kw">return</span> {<span class="st">"status"</span>: <span class="st">"ok"</span>}</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Por qu&eacute; el endpoint <code>/health</code> es clave para DevOps:</strong><br>
+                    Kubernetes usa este endpoint para las <strong>liveness probes</strong> (el pod est&aacute; vivo) y
+                    <strong>readiness probes</strong> (el pod est&aacute; listo para recibir tr&aacute;fico). Si el endpoint
+                    devuelve un estado no-2xx, Kubernetes reinicia el pod autom&aacute;ticamente.
+                </div>
+
+                <h3>Probar la API localmente</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal</div>
+                    <pre><code><span class="cmd">py -m uvicorn app.main:app --reload</span>
+<span class="out">INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)</span>
+<span class="out">INFO:     Started reloader process [12345]</span></code></pre>
+                </div>
+                <p>Abre <strong>http://127.0.0.1:8000/docs</strong> para ver el Swagger UI interactivo generado autom&aacute;ticamente.</p>
+            </div>
+        </div>
+
+        <!-- PASO 4 -->
+        <div class="step-card" id="paso4">
+            <div class="step-header s4">
+                <div class="step-num">4</div>
+                <div class="step-header-text">
+                    <h3>Suite de tests con pytest</h3>
+                    <div class="step-desc">tests/test_tasks.py &mdash; 11 tests &middot; BD aislada &middot; inyecci&oacute;n de dependencias</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <p>La suite de tests usa <strong>dependency injection override</strong>: reemplaza la dependencia <code>get_db</code> de la app con una que apunta a una base de datos <strong>en memoria</strong>. As&iacute; los tests nunca tocan <code>tasks.db</code> de producci&oacute;n y no dejan archivos residuales.</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> tests/test_tasks.py (estructura)</div>
+                    <pre><code><span class="cm">"""Integration tests for the Task Manager API."""</span>
+<span class="kw">import</span> pytest
+<span class="kw">from</span> fastapi.testclient <span class="kw">import</span> TestClient
+<span class="kw">from</span> sqlalchemy <span class="kw">import</span> create_engine
+<span class="kw">from</span> sqlalchemy.orm <span class="kw">import</span> sessionmaker
+<span class="kw">from</span> sqlalchemy.pool <span class="kw">import</span> StaticPool
+
+<span class="kw">from</span> app.database <span class="kw">import</span> Base, get_db
+<span class="kw">from</span> app.main <span class="kw">import</span> app
+
+<span class="cm"># BD en memoria: sin archivos residuales, conexiones compartidas via StaticPool</span>
+TEST_DATABASE_URL = <span class="st">"sqlite:///:memory:"</span>
+
+engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={<span class="st">"check_same_thread"</span>: <span class="kw">False</span>},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=<span class="kw">False</span>, autoflush=<span class="kw">False</span>, bind=engine)
+
+
+<span class="kw">def</span> <span class="fn">override_get_db</span>():
+    db = TestingSessionLocal()
+    <span class="kw">try</span>:
+        <span class="kw">yield</span> db
+    <span class="kw">finally</span>:
+        db.close()
+
+
+app.dependency_overrides[get_db] = override_get_db
+
+
+<span class="dec">@pytest.fixture(autouse=True)</span>  <span class="cm"># se ejecuta en cada test automáticamente</span>
+<span class="kw">def</span> <span class="fn">setup_db</span>():
+    Base.metadata.create_all(bind=engine)
+    <span class="kw">yield</span>
+    Base.metadata.drop_all(bind=engine)  <span class="cm"># limpia tras cada test</span>
+
+
+client = TestClient(app)
+
+
+<span class="cm"># Ejemplo de test</span>
+<span class="kw">def</span> <span class="fn">test_health_check</span>():
+    r = client.get(<span class="st">"/health"</span>)
+    <span class="kw">assert</span> r.status_code == <span class="num">200</span>
+    <span class="kw">assert</span> r.json() == {<span class="st">"status"</span>: <span class="st">"ok"</span>}
+
+
+<span class="kw">def</span> <span class="fn">test_create_task</span>():
+    r = client.post(<span class="st">"/tasks/"</span>, json={<span class="st">"title"</span>: <span class="st">"Mi tarea"</span>, <span class="st">"description"</span>: <span class="st">"Desc"</span>})
+    <span class="kw">assert</span> r.status_code == <span class="num">201</span>
+    <span class="kw">assert</span> r.json()[<span class="st">"title"</span>] == <span class="st">"Mi tarea"</span>
+    <span class="kw">assert</span> r.json()[<span class="st">"completed"</span>] <span class="kw">is False</span></code></pre>
+                </div>
+
+                <h3>Ejecutar los tests</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal</div>
+                    <pre><code><span class="cmd">py -m pytest tests/ -v</span></code></pre>
+                </div>
+
+                <div class="test-results">
+<span class="t-info">============================= test session starts =============================</span>
+<span class="t-dim">platform win32 -- Python 3.10.9, pytest-8.2.0</span>
+<span class="t-dim">collected 11 items</span>
+
+<span class="t-pass">tests/test_tasks.py::test_health_check                    PASSED  [  9%]</span>
+<span class="t-pass">tests/test_tasks.py::test_create_task                     PASSED  [ 18%]</span>
+<span class="t-pass">tests/test_tasks.py::test_create_task_sin_descripcion     PASSED  [ 27%]</span>
+<span class="t-pass">tests/test_tasks.py::test_listar_tareas_vacia             PASSED  [ 36%]</span>
+<span class="t-pass">tests/test_tasks.py::test_listar_tareas                   PASSED  [ 45%]</span>
+<span class="t-pass">tests/test_tasks.py::test_get_task_existente              PASSED  [ 54%]</span>
+<span class="t-pass">tests/test_tasks.py::test_get_task_no_existente           PASSED  [ 63%]</span>
+<span class="t-pass">tests/test_tasks.py::test_update_task                     PASSED  [ 72%]</span>
+<span class="t-pass">tests/test_tasks.py::test_update_task_no_existente        PASSED  [ 81%]</span>
+<span class="t-pass">tests/test_tasks.py::test_eliminar_tarea                  PASSED  [ 90%]</span>
+<span class="t-pass">tests/test_tasks.py::test_eliminar_tarea_no_existente     PASSED  [100%]</span>
+
+<span class="t-warn">-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html</span>
+<span class="t-info">======================== 11 passed, 1 warning in 4.10s ========================</span>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Por qu&eacute; <code>autouse=True</code> en el fixture:</strong><br>
+                    Asegura que antes de cada test la tabla se cree limpia y despu&eacute;s se destruya.
+                    Esto hace que cada test sea completamente independiente &mdash; un principio clave del testing:
+                    los tests no deben depender del orden de ejecuci&oacute;n.
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>sqlite:///:memory:</code> + <code>StaticPool</code>:</strong><br>
+                    Usar una BD en memoria (<code>:memory:</code>) en lugar de un archivo (<code>test_tasks.db</code>)
+                    es la mejor pr&aacute;ctica en testing: no deja archivos residuales, es m&aacute;s r&aacute;pida
+                    y garantiza aislamiento total entre ejecuciones de la suite.
+                    <br>
+                    <code>StaticPool</code> asegura que todas las conexiones del motor compartan la misma
+                    base de datos en memoria &mdash; sin &eacute;l, cada <code>connect()</code> crear&iacute;a una BD nueva e independiente.
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 5 -->
+        <div class="step-card" id="paso5">
+            <div class="step-header s5">
+                <div class="step-num">5</div>
+                <div class="step-header-text">
+                    <h3>Dockerfile multistage</h3>
+                    <div class="step-desc">Imagen de producci&oacute;n slim &middot; etapa builder &middot; usuario sin privilegios</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <p>El <strong>build multistage</strong> es una pr&aacute;ctica DevOps fundamental: separa la fase de instalaci&oacute;n de dependencias (etapa <em>builder</em>) de la imagen final de runtime. El resultado es una imagen significativamente m&aacute;s peque&ntilde;a y sin herramientas de compilaci&oacute;n innecesarias.</p>
+
+                <div class="arch-flow">
+                    <div class="arch-box">Etapa <strong>builder</strong><br><small>python:3.12-slim</small><br><small>pip install</small></div>
+                    <div class="arch-arrow">&rarr;</div>
+                    <div class="arch-box highlight">COPY --from=builder<br><small>solo /install</small></div>
+                    <div class="arch-arrow">&rarr;</div>
+                    <div class="arch-box">Etapa <strong>runtime</strong><br><small>python:3.12-slim</small><br><small>appuser (no root)</small></div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Dockerfile</div>
+                    <pre><code><span class="cm"># ── ETAPA 1: builder ─────────────────────────────────────</span>
+<span class="kw">FROM</span> python:3.12-slim <span class="kw">AS</span> builder
+
+<span class="kw">WORKDIR</span> /build
+<span class="kw">COPY</span> requirements.txt .
+
+<span class="cm"># Actualizar pip e instalar en /install (aislado del sistema)</span>
+<span class="kw">RUN</span> pip install --no-cache-dir --upgrade pip \
+    &amp;&amp; pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+<span class="cm"># ── ETAPA 2: runtime ─────────────────────────────────────</span>
+<span class="kw">FROM</span> python:3.12-slim <span class="kw">AS</span> runtime
+
+<span class="kw">WORKDIR</span> /app
+
+<span class="cm"># Copiar solo las dependencias instaladas</span>
+<span class="kw">COPY</span> --from=builder /install /usr/local
+
+<span class="cm"># Copiar código fuente</span>
+<span class="kw">COPY</span> app/ ./app/
+
+<span class="cm"># Puerto de la aplicaci&oacute;n</span>
+<span class="kw">EXPOSE</span> 8000
+
+<span class="cm"># Usuario sin privilegios (seguridad)</span>
+<span class="kw">RUN</span> adduser --disabled-password --gecos "" appuser
+<span class="kw">USER</span> appuser
+
+<span class="kw">CMD</span> ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Por qu&eacute; usuario <code>appuser</code> (sin root):</strong><br>
+                    OWASP recomienda ejecutar procesos en contenedores con el m&iacute;nimo privilegio posible.
+                    Si un atacante explota la aplicaci&oacute;n, no tiene acceso root al contenedor ni al host.
+                    Kubernetes tambi&eacute;n puede forzar esta pol&iacute;tica con <code>securityContext.runAsNonRoot: true</code>.
+                </div>
+
+                <h3>Construir y probar la imagen</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal</div>
+                    <pre><code><span class="cmd">docker build -t devops-task-api:local .</span>
+<span class="out">Successfully built abc123def456</span>
+<span class="out">Successfully tagged devops-task-api:local</span>
+
+<span class="cmd">docker run -p 8000:8000 devops-task-api:local</span>
+<span class="out">INFO: Uvicorn running on http://0.0.0.0:8000</span></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 6 -->
+        <div class="step-card" id="paso6">
+            <div class="step-header s6">
+                <div class="step-num">6</div>
+                <div class="step-header-text">
+                    <h3>docker-compose para desarrollo local</h3>
+                    <div class="step-desc">Hot-reload &middot; volumen montado &middot; sin reconstruir imagen en cada cambio</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <p>En desarrollo, queremos que los cambios en el c&oacute;digo se reflejen inmediatamente sin tener que reconstruir la imagen Docker. <code>docker-compose.yml</code> monta el directorio del proyecto como volumen y activa el modo <code>--reload</code> de uvicorn.</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> docker-compose.yml</div>
+                    <pre><code>services:
+  api:
+    build: .
+    ports:
+      - <span class="st">"8000:8000"</span>
+    volumes:
+      - .:/app           <span class="cm"># monta el proyecto para hot-reload</span>
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - PYTHONUNBUFFERED=1</code></pre>
+                </div>
+
+                <h3>Levantar el entorno de desarrollo</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal</div>
+                    <pre><code><span class="cmd">docker compose up --build</span>
+<span class="out">Building api...</span>
+<span class="out">[+] Building 12.3s (10/10) FINISHED</span>
+<span class="out">Attaching to material-devops-integracion-api-1</span>
+<span class="out">api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)</span>
+<span class="out">api-1  | INFO:     Started reloader process</span>
+
+<span class="cm"># Detener</span>
+<span class="cmd">docker compose down</span></code></pre>
+                </div>
+
+                <div class="warn-box">
+                    <strong>&#128161; Diferencia entre desarrollo y producci&oacute;n:</strong><br>
+                    <code>docker-compose.yml</code> (desarrollo) sobrescribe el <code>CMD</code> del Dockerfile para agregar <code>--reload</code>
+                    y monta el c&oacute;digo como volumen. En producci&oacute;n (Kubernetes), se usa la imagen construida con el
+                    <code>CMD</code> del Dockerfile &mdash; sin <code>--reload</code> y con el c&oacute;digo embebido en la imagen.
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 7 -->
+        <div class="step-card" id="paso7">
+            <div class="step-header s7">
+                <div class="step-num">7</div>
+                <div class="step-header-text">
+                    <h3>Seed de base de datos</h3>
+                    <div class="step-desc">seed.py &mdash; 10 tareas iniciales &middot; idempotente &middot; flag --force</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <p>El script <code>seed.py</code> pobla la base de datos con 10 tareas representativas del propio proyecto. Refleja el estado real: las tareas de Semana 1 marcadas como completadas, las de Semanas 2 y 3 pendientes.</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> seed.py (fragmento)</div>
+                    <pre><code><span class="kw">import</span> sys
+<span class="kw">from</span> app.database <span class="kw">import</span> SessionLocal, Base, engine, TaskDB
+
+TASKS = [
+    <span class="cm"># Semana 1 — completadas</span>
+    {<span class="st">"title"</span>: <span class="st">"Crear estructura FastAPI"</span>,
+     <span class="st">"description"</span>: <span class="st">"Scaffolding del proyecto, requirements.txt y app/"</span>,
+     <span class="st">"completed"</span>: <span class="kw">True</span>},
+    {<span class="st">"title"</span>: <span class="st">"Implementar CRUD de tareas"</span>,
+     <span class="st">"description"</span>: <span class="st">"GET, POST, PUT, DELETE con SQLAlchemy"</span>,
+     <span class="st">"completed"</span>: <span class="kw">True</span>},
+    {<span class="st">"title"</span>: <span class="st">"Tests con pytest"</span>,
+     <span class="st">"description"</span>: <span class="st">"11 tests con BD aislada usando dependency override"</span>,
+     <span class="st">"completed"</span>: <span class="kw">True</span>},
+    {<span class="st">"title"</span>: <span class="st">"Dockerfile multistage"</span>,
+     <span class="st">"description"</span>: <span class="st">"Imagen slim con usuario sin privilegios"</span>,
+     <span class="st">"completed"</span>: <span class="kw">True</span>},
+    <span class="cm"># Semana 2 — pendientes</span>
+    {<span class="st">"title"</span>: <span class="st">"Configurar Jenkins"</span>,
+     <span class="st">"description"</span>: <span class="st">"Jenkins LTS con docker-compose en jenkins/"</span>,
+     <span class="st">"completed"</span>: <span class="kw">False</span>},
+    <span class="cm"># ... 5 más</span>
+]
+
+<span class="kw">def</span> <span class="fn">seed</span>():
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    <span class="kw">if</span> db.query(TaskDB).count() > <span class="num">0</span>:
+        print(<span class="st">"⚠ BD ya tiene datos. Usa --force para reiniciar."</span>)
+        db.close(); <span class="kw">return</span>
+    <span class="kw">for</span> t <span class="kw">in</span> TASKS:
+        db.add(TaskDB(**t))
+    db.commit(); db.close()
+    print(<span class="st">"✅ Seed completado: 10 tareas insertadas en tasks.db"</span>)
+
+<span class="kw">if</span> __name__ == <span class="st">"__main__"</span>:
+    <span class="kw">if</span> <span class="st">"--force"</span> <span class="kw">in</span> sys.argv:
+        seed_force()
+    <span class="kw">else</span>:
+        seed()</code></pre>
+                </div>
+
+                <h3>Ejecutar el seed</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Terminal</div>
+                    <pre><code><span class="cmd">py seed.py</span>
+<span class="out">&#10003; Seed completado: 10 tareas insertadas en tasks.db</span>
+<span class="out">   Prueba la API en: http://localhost:8000/docs</span>
+
+<span class="cm"># Si ya hay datos y quieres reiniciar:</span>
+<span class="cmd">py seed.py --force</span>
+<span class="out">&#128260; Base de datos reiniciada.</span>
+<span class="out">&#10003; Seed completado: 10 tareas insertadas en tasks.db</span></code></pre>
+                </div>
+
+                <div class="success-box">
+                    <strong>&#9989; Estado de las 10 tareas:</strong><br>
+                    4 completadas (tareas de Semana 1) &mdash; 6 pendientes (tareas de Semanas 2 y 3).<br>
+                    Verifica en <code>http://localhost:8000/tasks/</code> despu&eacute;s de iniciar la app.
+                </div>
+            </div>
+        </div>
+
+        <!-- VERIFICACION FINAL -->
+        <h2 id="verificacion">&#9989; Verificaci&oacute;n final de Semana 1</h2>
+
+        <div class="success-box">
+            <strong>Checklist completo de entregables:</strong>
+            <ol style="margin-top:10px;">
+                <li>&#9989; <strong>Repositorio</strong>: <code>.gitignore</code>, <code>requirements.txt</code>, <code>README.md</code></li>
+                <li>&#9989; <strong>App FastAPI</strong>: <code>app/main.py</code>, <code>app/database.py</code>, <code>app/models.py</code>, <code>app/routers/tasks.py</code></li>
+                <li>&#9989; <strong>CRUD completo</strong>: GET / POST / PUT / DELETE en <code>/tasks/</code></li>
+                <li>&#9989; <strong>Endpoint /health</strong>: listo para liveness probes de Kubernetes</li>
+                <li>&#9989; <strong>Tests</strong>: 11/11 en verde con <code>py -m pytest tests/ -v</code></li>
+                <li>&#9989; <strong>Dockerfile multistage</strong>: imagen slim + usuario sin privilegios</li>
+                <li>&#9989; <strong>docker-compose</strong>: entorno de desarrollo con hot-reload</li>
+                <li>&#9989; <strong>Seed</strong>: 10 tareas en <code>tasks.db</code> con <code>py seed.py</code></li>
+            </ol>
+        </div>
+
+        <h3>Comandos de verificaci&oacute;n</h3>
+        <div class="code-block">
+            <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> Verificaci&oacute;n completa</div>
+            <pre><code><span class="cm"># 1. Tests</span>
+<span class="cmd">py -m pytest tests/ -v</span>
+<span class="out">11 passed in 4.10s</span>
+
+<span class="cm"># 2. Seed</span>
+<span class="cmd">py seed.py</span>
+<span class="out">&#10003; Seed completado: 10 tareas insertadas en tasks.db</span>
+
+<span class="cm"># 3. App local</span>
+<span class="cmd">py -m uvicorn app.main:app --reload</span>
+<span class="cm"># Abrir: http://127.0.0.1:8000/docs</span>
+<span class="cm"># Abrir: http://127.0.0.1:8000/health → {"status": "ok"}</span>
+
+<span class="cm"># 4. Docker</span>
+<span class="cmd">docker compose up --build</span>
+<span class="cm"># Abrir: http://localhost:8000/docs</span>
+
+<span class="cm"># 5. Git push (pendiente)</span>
+<span class="cmd">git add .</span>
+<span class="cmd">git commit -m "feat: Week 1 - FastAPI CRUD + Docker + pytest (11 tests)"</span>
+<span class="cmd">git push origin main</span></code></pre>
+        </div>
+
+        <div class="info-box">
+            <strong>&#128640; Pr&oacute;ximo paso &mdash; Semana 2: Jenkins CI</strong><br>
+            Con la Semana 1 completa, el siguiente paso es automatizar el proceso: levantar Jenkins en Docker,
+            escribir el <code>Jenkinsfile</code> con los stages de Checkout &rarr; Test &rarr; Build &rarr; Push,
+            y conectarlo a GitHub para que cada commit dispare el pipeline autom&aacute;ticamente.
+        </div>
+
+    </div>
+</main>
+
+<footer class="main-footer">
+    <div class="container">
+        <p><strong>Semana 1 &mdash; DevOps Task Manager API</strong></p>
+        <p>Especializaci&oacute;n en Arquitectura de Software &middot; Curso DevOps e Integraci&oacute;n Continua &middot; 2026</p>
+        <div class="footer-links">
+            <a href="overview.html">&#127968; Volver al resumen</a>
+            <a href="Dockerfile">&#128051; Dockerfile</a>
+            <a href="docker-compose.yml">&#128230; docker-compose</a>
+            <a href="README.md">&#128196; README</a>
+        </div>
+        <p style="margin-top:14px; font-size:0.85em; opacity:0.6;">FastAPI &middot; SQLAlchemy &middot; pytest &middot; Docker &middot; Python 3.10</p>
+    </div>
+</footer>
+
+<button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="scrollTopBtn" title="Ir arriba">&#8679;</button>
+<script>
+    window.onscroll = function() {
+        document.getElementById("scrollTopBtn").style.display =
+            (document.documentElement.scrollTop > 300) ? "block" : "none";
+    };
+    // Activar nav link del paso visible
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                document.querySelectorAll('.step-nav a').forEach(a => a.style.background = '');
+                const id = e.target.id;
+                const link = document.querySelector(`.step-nav a[href="#${id}"]`);
+                if (link) link.style.background = 'rgba(255,255,255,0.2)';
+            }
+        });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('[id]').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
