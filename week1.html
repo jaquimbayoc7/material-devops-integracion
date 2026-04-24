@@ -401,7 +401,8 @@
                     <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> requirements.txt</div>
                     <pre><code>fastapi==0.115.0
 uvicorn==0.30.0
-sqlalchemy==2.0.30
+sqlalchemy==2.0.40
+pydantic==2.10.3
 pytest==8.2.0
 httpx==0.27.0</code></pre>
                 </div>
@@ -411,6 +412,7 @@ httpx==0.27.0</code></pre>
                     <li><strong>fastapi</strong> — framework web para la API REST con validaci&oacute;n autom&aacute;tica y Swagger UI</li>
                     <li><strong>uvicorn</strong> — servidor ASGI de alto rendimiento para correr FastAPI</li>
                     <li><strong>sqlalchemy</strong> — ORM para persistir datos en SQLite sin escribir SQL crudo</li>
+                    <li><strong>pydantic</strong> — validaci&oacute;n de datos y esquemas de entrada/salida de la API</li>
                     <li><strong>pytest</strong> — runner de tests con fixtures y plugins</li>
                     <li><strong>httpx</strong> — cliente HTTP utilizado por el <code>TestClient</code> de FastAPI en los tests</li>
                 </ul>
@@ -422,7 +424,7 @@ httpx==0.27.0</code></pre>
 <span class="out">Python 3.10.9</span>
 
 <span class="cmd">py -m pip install -r requirements.txt</span>
-<span class="out">Successfully installed fastapi-0.115.0 uvicorn-0.30.0 sqlalchemy-2.0.30 ...</span></code></pre>
+<span class="out">Successfully installed fastapi-0.115.0 uvicorn-0.30.0 sqlalchemy-2.0.40 pydantic-2.10.3 ...</span></code></pre>
                 </div>
 
                 <div class="warn-box">
@@ -466,12 +468,13 @@ httpx==0.27.0</code></pre>
                 <div class="code-block">
                     <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> app/database.py</div>
                     <pre><code><span class="cm">"""Database engine, session factory, ORM model, and get_db dependency."""</span>
+<span class="kw">import</span> os
 <span class="kw">from</span> collections.abc <span class="kw">import</span> Generator
 
 <span class="kw">from</span> sqlalchemy <span class="kw">import</span> Boolean, Column, Integer, String, create_engine
 <span class="kw">from</span> sqlalchemy.orm <span class="kw">import</span> Session, declarative_base, sessionmaker
 
-DATABASE_URL = <span class="st">"sqlite:///./tasks.db"</span>
+DATABASE_URL = os.getenv(<span class="st">"DATABASE_URL"</span>, <span class="st">"sqlite:///./tasks.db"</span>)
 
 engine = create_engine(DATABASE_URL, connect_args={<span class="st">"check_same_thread"</span>: <span class="kw">False</span>})
 SessionLocal = sessionmaker(autocommit=<span class="kw">False</span>, autoflush=<span class="kw">False</span>, bind=engine)
@@ -849,9 +852,14 @@ client = TestClient(app)
 <span class="cm"># Puerto de la aplicaci&oacute;n</span>
 <span class="kw">EXPOSE</span> 8000
 
-<span class="cm"># Usuario sin privilegios (seguridad)</span>
-<span class="kw">RUN</span> adduser --disabled-password --gecos "" appuser
+<span class="cm"># Usuario sin privilegios + directorio para SQLite</span>
+<span class="kw">RUN</span> adduser --disabled-password --gecos "" appuser \
+    &amp;&amp; mkdir -p /app/data \
+    &amp;&amp; chown appuser:appuser /app/data
 <span class="kw">USER</span> appuser
+
+<span class="cm"># Ruta de la BD en contenedor (sobreescribible con -e DATABASE_URL)</span>
+<span class="kw">ENV</span> DATABASE_URL=sqlite:////app/data/tasks.db
 
 <span class="kw">CMD</span> ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
                 </div>
