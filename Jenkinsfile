@@ -61,6 +61,7 @@ pipeline {
                 sh """
                     cp \$HOME/.kube/config /tmp/kubeconfig
                     sed -i 's/127.0.0.1/host.docker.internal/g' /tmp/kubeconfig
+                    sed -i 's/certificate-authority-data:.*/insecure-skip-tls-verify: true/' /tmp/kubeconfig
                     export KUBECONFIG=/tmp/kubeconfig
                     kubectl apply -f k8s/ --validate=false
                     kubectl set image deployment/taskapi taskapi=${IMAGE_NAME}:${BUILD_NUMBER} -n devops-project
