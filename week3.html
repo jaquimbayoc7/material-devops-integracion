@@ -1084,12 +1084,27 @@ default           Active   2d</span></code></pre>
             de los anteriores.
         </p>
 
+        <div class="info-box" style="border-left: 5px solid #7e57c2;">
+            <strong>&#128187; LOCAL vs &#9729;&#65039; NUBE en Semana 3</strong><br>
+            <table style="width:100%; border-collapse:collapse; font-size:0.9em; margin-top:10px;">
+                <thead><tr style="background:#e8eaf6;"><th style="padding:6px 10px;text-align:left;">Qu&eacute;</th><th style="padding:6px 10px;text-align:left;">D&oacute;nde</th><th style="padding:6px 10px;text-align:left;">Acci&oacute;n</th></tr></thead>
+                <tbody>
+                    <tr><td style="padding:5px 10px;">Docker Desktop + Kubernetes</td><td style="padding:5px 10px;">&#128187; <strong>LOCAL</strong></td><td style="padding:5px 10px;"><code>docker version</code> &bull; <code>kubectl cluster-info</code></td></tr>
+                    <tr style="background:#f9f9f9;"><td style="padding:5px 10px;">Jenkins (servidor CI)</td><td style="padding:5px 10px;">&#128187; <strong>LOCAL</strong></td><td style="padding:5px 10px;"><code>docker compose up -d</code> en <code>jenkins/</code></td></tr>
+                    <tr><td style="padding:5px 10px;">Repositorio del c&oacute;digo</td><td style="padding:5px 10px;">&#9729;&#65039; <strong>NUBE</strong></td><td style="padding:5px 10px;">GitHub.com — Jenkins hace <code>git clone</code> desde aqu&iacute;</td></tr>
+                    <tr style="background:#f9f9f9;"><td style="padding:5px 10px;">Registro de im&aacute;genes</td><td style="padding:5px 10px;">&#9729;&#65039; <strong>NUBE</strong></td><td style="padding:5px 10px;">Docker Hub — Jenkins hace <code>docker push</code> y K8s hace <code>docker pull</code></td></tr>
+                    <tr><td style="padding:5px 10px;">Tests, Build, Deploy</td><td style="padding:5px 10px;">&#128187; <strong>LOCAL</strong></td><td style="padding:5px 10px;">Ejecutan dentro del contenedor Jenkins</td></tr>
+                    <tr style="background:#f9f9f9;"><td style="padding:5px 10px;">Kubernetes (cluster)</td><td style="padding:5px 10px;">&#128187; <strong>LOCAL</strong></td><td style="padding:5px 10px;"><code>kubectl apply -f k8s/</code> &bull; Docker Desktop K8s</td></tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- ── PASO A: Docker Desktop ── -->
         <div class="step-card">
             <div class="step-header s1">
                 <div class="step-num">A</div>
                 <div class="step-header-text">
-                    <h3>Docker Desktop + Kubernetes</h3>
+                    <h3>Docker Desktop + Kubernetes &nbsp;<span style="font-size:0.75em;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;">&#128187; LOCAL</span></h3>
                     <div class="step-desc">Punto de partida — ambos deben estar activos antes de cualquier otra cosa</div>
                 </div>
             </div>
@@ -1128,7 +1143,7 @@ default           Active   2d</span></code></pre>
             <div class="step-header s2">
                 <div class="step-num">B</div>
                 <div class="step-header-text">
-                    <h3>Levantar Jenkins</h3>
+                    <h3>Levantar Jenkins &nbsp;<span style="font-size:0.75em;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;">&#128187; LOCAL</span></h3>
                     <div class="step-desc">docker compose up desde la carpeta jenkins/ — container_name: jenkins</div>
                 </div>
             </div>
@@ -1212,13 +1227,27 @@ jenkins  | INFO: Jenkins is fully up and running</span>
             <div class="step-header s3">
                 <div class="step-num">C</div>
                 <div class="step-header-text">
-                    <h3>Credenciales Docker Hub en Jenkins</h3>
+                    <h3>Credenciales Docker Hub en Jenkins &nbsp;<span style="font-size:0.75em;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;">&#128187; LOCAL&nbsp;+&nbsp;&#9729;&#65039; NUBE</span></h3>
                     <div class="step-desc">Solo en la primera vez — el volumen las persiste entre sesiones</div>
                 </div>
             </div>
             <div class="step-body">
                 <p>El stage <em>Push</em> del Jenkinsfile necesita el credential ID <code>dockerhub-creds</code>.
                 Si ya lo creaste en una sesión anterior, sáltate este paso.</p>
+
+                <div class="warn-box" style="border-left:4px solid #0db7ed;">
+                    <strong>&#9729;&#65039; NUBE &mdash; hub.docker.com (obtener el PAT)</strong><br>
+                    Si aún no tienes un Personal Access Token de Docker Hub, créalo ahora:
+                    <ol style="margin: 8px 0 0 18px;">
+                        <li>Inicia sesión en <a href="https://hub.docker.com" target="_blank"><strong>hub.docker.com</strong></a>.</li>
+                        <li>Haz clic en tu avatar &rarr; <strong>Account Settings</strong> &rarr; <strong>Security</strong> &rarr; <strong>Personal access tokens</strong>.</li>
+                        <li>Clic en <strong>Generate new token</strong>:<br>
+                            &bull; Description: <code>jenkins-pipeline</code><br>
+                            &bull; Permissions: <strong>Read &amp; Write</strong><br>
+                            &bull; Clic en <strong>Generate</strong> y <strong>copia el token</strong> — solo se muestra una vez.
+                        </li>
+                    </ol>
+                </div>
 
                 <ol class="ui-steps">
                     <li>En Jenkins: <strong>Manage Jenkins → Credentials → (global) → Add Credentials</strong>.</li>
@@ -1243,7 +1272,7 @@ jenkins  | INFO: Jenkins is fully up and running</span>
             <div class="step-header s4">
                 <div class="step-num">D</div>
                 <div class="step-header-text">
-                    <h3>Crear el namespace y aplicar manifiestos Kubernetes</h3>
+                    <h3>Crear el namespace y aplicar manifiestos Kubernetes &nbsp;<span style="font-size:0.75em;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;">&#128187; LOCAL&nbsp;+&nbsp;&#9729;&#65039; NUBE</span></h3>
                     <div class="step-desc">Solo la primera vez — o para restaurar el estado si borraste los recursos</div>
                 </div>
             </div>
@@ -1293,6 +1322,23 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
 <span class="t-k8s">horizontalpodautoscaler.autoscaling/taskapi-hpa   Deployment/taskapi   18%/60%   2         5         2</span>
                 </div>
 
+                <div class="warn-box" style="border-left:4px solid #0db7ed;">
+                    <strong>&#9729;&#65039; NUBE &mdash; Docker Hub (de dónde K8s descarga la imagen)</strong><br>
+                    Cuando el pod arranca, Kubernetes hace un <code>docker pull</code> automático
+                    de <code>hub.docker.com/r/TU-USUARIO/devops-taskapi:latest</code>.
+                    Puedes verificar que la imagen existe antes de aplicar los manifiestos:
+                    <div class="code-block" style="margin: 8px 0 0;">
+                        <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL — verificar imagen en Docker Hub</div>
+                        <pre><code><span class="cm"># Comprobar que la imagen existe en Docker Hub antes de aplicar</span>
+<span class="cmd">docker pull TU-USUARIO/devops-taskapi:latest</span>
+<span class="out">latest: Pulling from TU-USUARIO/devops-taskapi</span>
+<span class="out">Status: Image is up to date for TU-USUARIO/devops-taskapi:latest</span>
+
+<span class="cm"># Si devuelve "not found" → el pipeline aún no ha hecho push</span>
+<span class="cm"># En ese caso ejecuta el pipeline primero (Paso E) y luego aplica los manifiestos</span></code></pre>
+                    </div>
+                </div>
+
                 <div class="warn-box">
                     <strong>&#9888;&#65039; <code>ErrImagePull</code> o <code>ImagePullBackOff</code></strong><br>
                     Ocurre cuando la imagen <code>TU-USUARIO/devops-taskapi:latest</code> no existe aún
@@ -1308,7 +1354,7 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
             <div class="step-header s5">
                 <div class="step-num">E</div>
                 <div class="step-header-text">
-                    <h3>Crear el job en Jenkins (solo primera vez)</h3>
+                    <h3>Crear el job en Jenkins (solo primera vez) &nbsp;<span style="font-size:0.75em;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;">&#128187; LOCAL&nbsp;+&nbsp;&#9729;&#65039; NUBE</span></h3>
                     <div class="step-desc">New Item → Pipeline → Pipeline script from SCM → GitHub + Jenkinsfile</div>
                 </div>
             </div>
@@ -1334,12 +1380,26 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
                     <li>Primer build: <strong>Build Now</strong> (sin esperar el polling).</li>
                 </ol>
 
-                <div class="warn-box">
-                    <strong>&#9888;&#65039; Antes de hacer Build Now</strong><br>
-                    Verifica que el archivo <code>Jenkinsfile</code> en la raíz del repositorio tiene
-                    <code>IMAGE_NAME = "TU-USUARIO/devops-taskapi"</code> con tu Docker ID real
-                    (no el placeholder literal). De lo contrario, el stage Push fallará con
-                    <em>"unauthorized: authentication required"</em>.
+                <div class="warn-box" style="border-left:4px solid #24292f;">
+                    <strong>&#9729;&#65039; NUBE &mdash; GitHub (acción requerida antes de Build Now)</strong><br>
+                    El Jenkinsfile debe estar commiteado en tu repositorio de GitHub con el Docker ID real:
+                    <div class="code-block" style="margin: 8px 0;">
+                        <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL — verificar y pushear el Jenkinsfile</div>
+                        <pre><code><span class="cm"># 1. Editar Jenkinsfile: reemplazar TU-USUARIO por tu Docker ID real</span>
+<span class="cm">#    IMAGE_NAME = "jaquimbayoc/devops-taskapi"  ← ejemplo</span>
+
+<span class="cm"># 2. Confirmar que el archivo está en el repo de GitHub</span>
+<span class="cmd">git add Jenkinsfile</span>
+<span class="cmd">git commit -m "feat: configurar IMAGE_NAME con Docker ID real"</span>
+<span class="cmd">git push origin main</span>
+<span class="out">To https://github.com/TU-USUARIO/devops-taskapi.git</span>
+<span class="out">   abc1234..def5678  main -> main</span>
+
+<span class="cm"># 3. Verificar en GitHub que el Jenkinsfile tiene el ID correcto:</span>
+<span class="cm">#    https://github.com/TU-USUARIO/devops-taskapi/blob/main/Jenkinsfile</span></code></pre>
+                    </div>
+                    Después de esto, el SCM polling de Jenkins detectará el cambio en &le;5 min
+                    o puedes hacer clic en <strong>Build Now</strong> para dispararlo de inmediato.
                 </div>
             </div>
         </div>
@@ -1349,13 +1409,13 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
             <div class="step-header s6">
                 <div class="step-num">F</div>
                 <div class="step-header-text">
-                    <h3>Ejecución del pipeline — qué esperar en cada stage</h3>
+                    <h3>Ejecución del pipeline — qué esperar en cada stage &nbsp;<span style="font-size:0.75em;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;">&#128187; LOCAL&nbsp;+&nbsp;&#9729;&#65039; NUBE</span></h3>
                     <div class="step-desc">Tiempos aproximados y salidas esperadas por stage</div>
                 </div>
             </div>
             <div class="step-body">
 
-                <h3>Stage 1 — Checkout (~3 s)</h3>
+                <h3>Stage 1 — Checkout (~3 s) &nbsp;<span style="font-size:0.8em;color:#546e7a;">&#128187; LOCAL (Jenkins) &larr; &#9729;&#65039; NUBE (GitHub)</span></h3>
                 <div class="test-results">
 <span class="t-info">Stage: Checkout</span>
 <span class="t-pass"> ✓ Cloning repository https://github.com/TU-USUARIO/devops-taskapi.git</span>
@@ -1363,7 +1423,19 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
 <span class="t-dim"> > git checkout -f abc1234</span>
                 </div>
 
-                <h3>Stage 2 — Test (~25 s)</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> &#9729;&#65039; NUBE — GitHub: verificar el commit que disparó el build</div>
+                    <pre><code><span class="cm"># Qué puedes ver en GitHub tras el checkout:</span>
+<span class="cm"># https://github.com/TU-USUARIO/devops-taskapi/commits/main</span>
+
+<span class="cm"># O desde la terminal LOCAL:</span>
+<span class="cmd">git log --oneline -3</span>
+<span class="out">def5678 (HEAD -> main, origin/main) feat: mi último cambio</span>
+<span class="out">abc1234 feat: configurar IMAGE_NAME con Docker ID real</span>
+<span class="out">789abc0 fix: corregir ruta de base de datos</span></code></pre>
+                </div>
+
+                <h3>Stage 2 — Test (~25 s) &nbsp;<span style="font-size:0.8em;color:#546e7a;">&#128187; LOCAL (dentro del contenedor Jenkins)</span></h3>
                 <div class="test-results">
 <span class="t-info">Stage: Test</span>
 <span class="t-dim"> + python3 -m venv .venv</span>
@@ -1387,7 +1459,7 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
 <span class="t-pass"> ✓ JUnit test report archived: test-report.xml (11 tests)</span>
                 </div>
 
-                <h3>Stage 3 — Build (~40 s)</h3>
+                <h3>Stage 3 — Build (~40 s) &nbsp;<span style="font-size:0.8em;color:#546e7a;">&#128187; LOCAL (daemon Docker del host)</span></h3>
                 <div class="test-results">
 <span class="t-info">Stage: Build</span>
 <span class="t-dim"> + docker build -t TU-USUARIO/devops-taskapi:5 .</span>
@@ -1404,7 +1476,7 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
                     en lugar de ~40 s.
                 </div>
 
-                <h3>Stage 4 — Push (~15 s)</h3>
+                <h3>Stage 4 — Push (~15 s) &nbsp;<span style="font-size:0.8em;color:#546e7a;">&#128187; LOCAL &rarr; &#9729;&#65039; NUBE (Docker Hub)</span></h3>
                 <div class="test-results">
 <span class="t-info">Stage: Push</span>
 <span class="t-dim"> + echo "***" | docker login -u TU-USUARIO --password-stdin</span>
@@ -1416,7 +1488,23 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
 <span class="t-pass"> ✓ latest: digest: sha256:abc123... size: 1234</span>
                 </div>
 
-                <h3>Stage 5 — Deploy (~20 s)</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> &#9729;&#65039; NUBE — Docker Hub: verificar que la imagen fue publicada</div>
+                    <pre><code><span class="cm"># Opción 1: desde el navegador</span>
+<span class="cm"># https://hub.docker.com/r/TU-USUARIO/devops-taskapi/tags</span>
+<span class="cm"># Deberías ver los tags: latest, 5, 4, 3...</span>
+
+<span class="cm"># Opción 2: desde la terminal LOCAL</span>
+<span class="cmd">docker pull TU-USUARIO/devops-taskapi:5</span>
+<span class="out">5: Pulling from TU-USUARIO/devops-taskapi</span>
+<span class="out">Status: Image is up to date for TU-USUARIO/devops-taskapi:5</span>
+
+<span class="cm"># Opción 3: inspeccionar el digest del tag latest</span>
+<span class="cmd">docker inspect TU-USUARIO/devops-taskapi:latest --format="{{.Id}}"</span>
+<span class="out">sha256:def56789abc...</span></code></pre>
+                </div>
+
+                <h3>Stage 5 — Deploy (~20 s) &nbsp;<span style="font-size:0.8em;color:#546e7a;">&#128187; LOCAL (Kubernetes en Docker Desktop) &larr; &#9729;&#65039; NUBE (imagen de Docker Hub)</span></h3>
                 <div class="test-results">
 <span class="t-info">Stage: Deploy</span>
 <span class="t-dim"> + cp $HOME/.kube/config /tmp/kubeconfig</span>
@@ -1458,7 +1546,7 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
             <div class="step-header s7">
                 <div class="step-num">G</div>
                 <div class="step-header-text">
-                    <h3>Verificación final del sistema completo</h3>
+                    <h3>Verificación final del sistema completo &nbsp;<span style="font-size:0.75em;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;">&#128187; LOCAL&nbsp;+&nbsp;&#9729;&#65039; NUBE</span></h3>
                     <div class="step-desc">Comandos de comprobación y salidas esperadas tras el primer deploy exitoso</div>
                 </div>
             </div>
@@ -1514,11 +1602,41 @@ taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
                 <div class="code-block">
                     <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
                     <pre><code><span class="cmd">kubectl logs -l app=taskapi -n devops-project --tail=5</span>
-<span class="out">INFO:     Started server process [1]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:0 - "GET /health HTTP/1.1" 200 OK</span></code></pre>
+<span class="out">INFO:     Started server process [1]</span>
+<span class="out">INFO:     Waiting for application startup.</span>
+<span class="out">INFO:     Application startup complete.</span>
+<span class="out">INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)</span>
+<span class="out">INFO:     127.0.0.1:0 - "GET /health HTTP/1.1" 200 OK</span></code></pre>
+                </div>
+
+                <h3>6. &#9729;&#65039; Verificación en la NUBE</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> &#9729;&#65039; NUBE — Docker Hub: confirmar tags publicados</div>
+                    <pre><code><span class="cm"># En el navegador:</span>
+<span class="cm"># https://hub.docker.com/r/TU-USUARIO/devops-taskapi/tags</span>
+<span class="cm"># Deberías ver al menos dos tags listados:</span>
+<span class="out">latest   Pushed hace X minutos   Digest: sha256:abc...</span>
+<span class="out">5        Pushed hace X minutos   Digest: sha256:abc...   (mismo digest que latest)</span>
+
+<span class="cm"># Verificación desde la terminal LOCAL:</span>
+<span class="cmd">docker pull TU-USUARIO/devops-taskapi:latest</span>
+<span class="out">Status: Image is up to date for TU-USUARIO/devops-taskapi:latest</span>
+<span class="cmd">docker images TU-USUARIO/devops-taskapi</span>
+<span class="out">REPOSITORY                       TAG       IMAGE ID       CREATED        SIZE</span>
+<span class="out">TU-USUARIO/devops-taskapi        latest    def567890abc   3 minutes ago  185MB</span>
+<span class="out">TU-USUARIO/devops-taskapi        5         def567890abc   3 minutes ago  185MB</span></code></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> &#9729;&#65039; NUBE — GitHub: confirmar que el Jenkinsfile y el código están en main</div>
+                    <pre><code><span class="cm"># Desde la terminal LOCAL:</span>
+<span class="cmd">git log --oneline -5 origin/main</span>
+<span class="out">def5678 (HEAD -> main, origin/main) feat: mi último cambio</span>
+<span class="out">abc1234 feat: configurar IMAGE_NAME con Docker ID real</span>
+
+<span class="cm"># En el navegador:</span>
+<span class="cm"># https://github.com/TU-USUARIO/devops-taskapi/actions  ← si usas GitHub Actions en el futuro</span>
+<span class="cm"># https://github.com/TU-USUARIO/devops-taskapi/blob/main/Jenkinsfile  ← Jenkinsfile en rama main</span></code></pre>
                 </div>
 
                 <h3>6. Detener todo al final de la sesión</h3>
