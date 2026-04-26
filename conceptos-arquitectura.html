@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitectura y Conceptos — DevOps Task Manager API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary:   #1a1f36;
+            --secondary: #2d3561;
+            --accent:    #e94560;
+            --accent2:   #f0c040;
+            --blue:      #0077b6;
+            --teal:      #00b4d8;
+            --green:     #27ae60;
+            --purple:    #7b4cf5;
+            --orange:    #e67e22;
+            --light-bg:  #f7f8fc;
+            --card-bg:   #ffffff;
+            --dark-text: #2c3e50;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; color: var(--dark-text); background: var(--light-bg); line-height: 1.85; }
+        .container { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+        /* ── HEADER ── */
+        .main-header { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; }
+        .top-bar { padding: 30px 0 18px; text-align: center; }
+        .brand-badge { display: inline-block; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 30px; padding: 5px 18px; font-size: 0.82em; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
+        .brand-name  { font-size: 1.9em; font-weight: 700; margin: 6px 0 4px; }
+        .brand-sub   { font-size: 0.95em; opacity: 0.7; font-weight: 300; }
+        .main-nav { background: rgba(0,0,0,0.25); border-top: 1px solid rgba(255,255,255,0.08); }
+        .main-nav ul { list-style: none; display: flex; justify-content: center; flex-wrap: wrap; }
+        .main-nav a  { color: rgba(255,255,255,0.82); text-decoration: none; padding: 12px 15px; display: block; font-size: 13px; font-weight: 500; transition: background 0.2s; }
+        .main-nav a:hover { background: rgba(255,255,255,0.12); color: white; }
+
+        /* ── HERO ── */
+        .hero { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: white; padding: 52px 40px; border-radius: 0 0 14px 14px; text-align: center; margin-bottom: 44px; }
+        .hero h1  { font-size: 2em; font-weight: 700; margin-bottom: 14px; line-height: 1.3; }
+        .hero .lead { font-size: 1.05em; opacity: 0.88; max-width: 760px; margin: 0 auto 20px; }
+        .pill-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 18px; }
+        .pill { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; padding: 4px 14px; font-size: 0.83em; font-weight: 500; }
+
+        /* ── TYPOGRAPHY ── */
+        h2 { color: var(--primary); font-size: 1.65em; margin: 52px 0 18px; padding-bottom: 10px; border-bottom: 3px solid var(--accent); }
+        h3 { color: var(--secondary); font-size: 1.22em; margin: 28px 0 10px; }
+        h4 { color: var(--dark-text); font-size: 1.02em; margin: 16px 0 7px; }
+        p  { margin-bottom: 13px; }
+        ul, ol { margin-left: 22px; margin-bottom: 13px; }
+        li { margin-bottom: 6px; }
+        code { background: #eef2ff; border: 1px solid #d0d8f0; border-radius: 4px; padding: 1px 6px; font-family: 'Fira Code', monospace; font-size: 0.88em; color: #c0392b; }
+        .divider { border: none; border-top: 2px solid #e5e8f0; margin: 44px 0; }
+
+        /* ── BOXES ── */
+        .info-box    { background: linear-gradient(135deg, #e8f4fd, #d6eaf8); border-left: 5px solid var(--blue);   padding: 20px 24px; border-radius: 8px; margin: 20px 0; }
+        .warn-box    { background: linear-gradient(135deg, #fef9e7, #fdebd0); border-left: 5px solid #f39c12;        padding: 20px 24px; border-radius: 8px; margin: 20px 0; }
+        .success-box { background: linear-gradient(135deg, #e8f8f5, #d5f5e3); border-left: 5px solid var(--green);  padding: 20px 24px; border-radius: 8px; margin: 20px 0; }
+        .purple-box  { background: linear-gradient(135deg, #f3eeff, #e8dcff); border-left: 5px solid var(--purple); padding: 20px 24px; border-radius: 8px; margin: 20px 0; }
+        .orange-box  { background: linear-gradient(135deg, #fef5ec, #fde8cc); border-left: 5px solid var(--orange); padding: 20px 24px; border-radius: 8px; margin: 20px 0; }
+
+        /* ── CARDS ── */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; margin: 20px 0; }
+        .card { background: var(--card-bg); border: 1px solid #e2e5ef; border-radius: 10px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card-icon { font-size: 2em; margin-bottom: 10px; }
+        .card-accent-red    { border-top: 4px solid var(--accent); }
+        .card-accent-blue   { border-top: 4px solid var(--blue); }
+        .card-accent-teal   { border-top: 4px solid var(--teal); }
+        .card-accent-green  { border-top: 4px solid var(--green); }
+        .card-accent-gold   { border-top: 4px solid var(--accent2); }
+        .card-accent-purple { border-top: 4px solid var(--purple); }
+        .card-accent-orange { border-top: 4px solid var(--orange); }
+
+        /* ── CONCEPT BLOCKS ── */
+        .concept { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin: 28px 0; align-items: start; }
+        .concept.rev { }
+        .concept-text { }
+        .concept-visual { background: var(--card-bg); border: 1.5px solid #dde2f0; border-radius: 12px; padding: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+        .concept-label { display: inline-block; background: var(--primary); color: white; border-radius: 20px; padding: 3px 14px; font-size: 0.78em; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px; }
+        .concept-label.blue   { background: var(--blue); }
+        .concept-label.red    { background: var(--accent); }
+        .concept-label.green  { background: var(--green); }
+        .concept-label.purple { background: var(--purple); }
+        .concept-label.orange { background: var(--orange); }
+        .concept-label.teal   { background: var(--teal); }
+
+        /* ── ANALOGY BOX ── */
+        .analogy { background: #fff8e1; border: 1.5px dashed #f9a825; border-radius: 10px; padding: 16px 20px; margin: 14px 0; }
+        .analogy-title { font-size: 0.82em; font-weight: 700; color: #e65100; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+
+        /* ── FLOW ── */
+        .flow-steps { counter-reset: flow-counter; margin: 24px 0; }
+        .flow-step  { display: flex; gap: 18px; margin-bottom: 20px; align-items: flex-start; }
+        .flow-num   { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1em; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .flow-num.c1 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .flow-num.c2 { background: linear-gradient(135deg, #333, #555); }
+        .flow-num.c3 { background: linear-gradient(135deg, #d33833, #ff6b35); }
+        .flow-num.c4 { background: linear-gradient(135deg, #0a9edc, #2496ed); }
+        .flow-num.c5 { background: linear-gradient(135deg, #0db7ed, #2496ed); }
+        .flow-num.c6 { background: linear-gradient(135deg, #326ce5, #7b4cf5); }
+        .flow-num.c7 { background: linear-gradient(135deg, #27ae60, #1a7a46); }
+        .flow-body  { flex: 1; }
+        .flow-body strong { display: block; font-size: 1.02em; color: var(--primary); margin-bottom: 4px; }
+        .flow-connector { text-align: center; color: #aab0c8; font-size: 1.6em; margin: 2px 0 2px 20px; line-height: 1; }
+
+        /* ── CONNECTIVITY TABLE ── */
+        .conn-table { width: 100%; border-collapse: collapse; margin: 22px 0; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .conn-table thead { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+        .conn-table th, .conn-table td { padding: 12px 16px; text-align: left; vertical-align: top; }
+        .conn-table td:first-child { font-weight: 600; white-space: nowrap; }
+        .conn-table tbody tr { border-bottom: 1px solid #e2e5ef; }
+        .conn-table tbody tr:nth-child(even) { background: #f7f8fc; }
+        .conn-table tbody tr:hover { background: #eaf0fb; }
+        .badge-proto { display: inline-block; background: #e8f4fd; border: 1px solid #b3d4f0; border-radius: 12px; padding: 1px 9px; font-size: 0.78em; font-weight: 600; color: var(--blue); margin-left: 5px; white-space: nowrap; }
+        .badge-proto.tcp   { background: #e8f4fd; border-color: #b3d4f0; color: var(--blue); }
+        .badge-proto.http  { background: #e8f8f5; border-color: #a9dfbf; color: var(--green); }
+        .badge-proto.sock  { background: #fef9e7; border-color: #f9c74f; color: #7d4f00; }
+        .badge-proto.rest  { background: #f3eeff; border-color: #c9b8f8; color: var(--purple); }
+
+        /* ── DIAGRAM ── */
+        .diagram-wrapper { background: linear-gradient(135deg, #0f2027 0%, #203a43 60%, #2c5364 100%); border-radius: 14px; padding: 28px 18px; margin: 28px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.18); overflow-x: auto; }
+        .diagram-wrapper svg { display: block; margin: 0 auto; max-width: 100%; }
+
+        /* ── CODE SNIPPET ── */
+        .code-block { background: #1e2235; border-radius: 10px; overflow: hidden; margin: 16px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+        .code-header { background: #2a3050; padding: 9px 16px; font-size: 0.78em; color: #a0aac8; font-family: 'Fira Code', monospace; display: flex; gap: 10px; align-items: center; }
+        .dot { width: 11px; height: 11px; border-radius: 50%; }
+        .dot-r { background: #ff5f57; } .dot-y { background: #ffbd2e; } .dot-g { background: #28c840; }
+        pre { padding: 16px 20px; overflow-x: auto; font-size: 0.85em; line-height: 1.7; }
+        pre code { background: none; border: none; padding: 0; color: #cdd6f4; }
+        .kw  { color: #cba6f7; } /* keywords */
+        .fn  { color: #89b4fa; } /* functions */
+        .st  { color: #a6e3a1; } /* strings */
+        .cm  { color: #6c7086; font-style: italic; } /* comments */
+        .num { color: #fab387; } /* numbers */
+        .cls { color: #f9e2af; } /* class */
+        .cmd { color: #89dceb; } /* commands */
+        .out { color: #a6e3a1; } /* output */
+        .key { color: #89dceb; } /* yaml keys */
+        .val { color: #fab387; } /* yaml values */
+
+        /* ── FAQ ── */
+        .faq-item { border: 1px solid #dde2f0; border-radius: 10px; margin: 14px 0; overflow: hidden; }
+        .faq-q { background: #f0f3fb; padding: 14px 20px; font-weight: 600; color: var(--secondary); cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .faq-a { padding: 14px 20px; border-top: 1px solid #dde2f0; background: white; display: none; }
+        .faq-item.open .faq-a { display: block; }
+        .faq-item.open .faq-q { background: #e8edf8; }
+        .faq-toggle { color: var(--blue); font-size: 1.2em; transition: transform 0.2s; }
+        .faq-item.open .faq-toggle { transform: rotate(45deg); }
+
+        /* ── FOOTER ── */
+        .main-footer { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 36px 0; text-align: center; margin-top: 50px; }
+        .footer-links { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-top: 14px; }
+        .main-footer a { color: #fff9e6; text-decoration: none; font-weight: 500; }
+        .main-footer a:hover { color: var(--accent2); }
+        #scrollTopBtn { display: none; position: fixed; bottom: 22px; right: 22px; background: var(--secondary); color: white; border: none; padding: 14px 18px; font-size: 17px; border-radius: 50%; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.25); z-index: 99; }
+        #scrollTopBtn:hover { background: var(--accent); }
+
+        @media (max-width: 700px) {
+            .concept { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 1.45em; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="container">
+        <div class="top-bar">
+            <div class="brand-badge">&#9881;&#65039; Especializaci&oacute;n en Arquitectura de Software</div>
+            <div class="brand-name">&#128218; Arquitectura y Conceptos DevOps</div>
+            <div class="brand-sub">Entiende el sistema antes de construirlo</div>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#que-es">&#129300; &iquest;Qu&eacute; es?</a></li>
+                <li><a href="#actores">&#127918; Actores</a></li>
+                <li><a href="#flujo">&#127756; Flujo completo</a></li>
+                <li><a href="#conectividad">&#128268; Conectividad</a></li>
+                <li><a href="#conceptos">&#128218; Conceptos clave</a></li>
+                <li><a href="#faq">&#10067; Preguntas</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main>
+<div class="container">
+
+    <div class="hero" id="que-es">
+        <h1>&#128736;&#65039; &iquest;C&oacute;mo funciona el sistema por dentro?</h1>
+        <p class="lead">
+            Una explicaci&oacute;n visual y conceptual de la arquitectura CI/CD del proyecto:
+            qui&eacute;n habla con qui&eacute;n, c&oacute;mo fluye el c&oacute;digo desde tu teclado hasta Kubernetes,
+            y por qu&eacute; cada pieza existe.
+        </p>
+        <div class="pill-row">
+            <span class="pill">&#128013; FastAPI</span>
+            <span class="pill">&#128051; Docker</span>
+            <span class="pill">&#129302; Jenkins</span>
+            <span class="pill">&#9096;&#65039; Kubernetes</span>
+            <span class="pill">&#128230; Docker Hub</span>
+            <span class="pill">&#128025; GitHub</span>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════
+         SECCIÓN 1 — LA GRAN IMAGEN
+    ════════════════════════════════════════════════ -->
+    <h2 id="que-es">1. La idea en una sola frase</h2>
+
+    <div class="info-box">
+        <strong>&#127775; Resumen de todo el sistema:</strong><br><br>
+        Cada vez que haces <code>git push</code>, Jenkins lo detecta autom&aacute;ticamente,
+        corre los tests, construye una imagen Docker, la publica en Docker Hub,
+        y Kubernetes descarga esa imagen nueva y reemplaza los pods sin que la app deje de responder.
+        <strong>T&uacute; solo haces push. El resto ocurre solo.</strong>
+    </div>
+
+    <div class="analogy">
+        <div class="analogy-title">&#127981; Anal&oacute;gia &mdash; La f&aacute;brica autom&aacute;tica</div>
+        <p style="margin:0;">
+            Imagina que escribes una receta nueva (tu c&oacute;digo) y la depositas en un buz&oacute;n (GitHub).
+            Un robot en la f&aacute;brica (Jenkins) revisa el buz&oacute;n cada 5 minutos.
+            Cuando encuentra una receta nueva: primero la prueba (tests), luego la empaqueta (imagen Docker),
+            la env&iacute;a al almac&eacute;n central (Docker Hub), y por &uacute;ltimo le dice al equipo de reparto
+            (Kubernetes) que empiece a entregar la nueva versi&oacute;n a los clientes (pods corriendo).
+        </p>
+    </div>
+
+    <hr class="divider">
+
+
+    <!-- ═══════════════════════════════════════════════
+         SECCIÓN 2 — LOS ACTORES
+    ════════════════════════════════════════════════ -->
+    <h2 id="actores">2. Los actores del sistema</h2>
+    <p>El sistema tiene <strong>6 actores</strong>. Tres viven en tu m&aacute;quina (<strong>LOCAL</strong>) y dos viven en internet (<strong>NUBE</strong>). Cada uno tiene un rol &uacute;nico.</p>
+
+    <div class="card-grid">
+        <div class="card card-accent-blue">
+            <div class="card-icon">&#128013;</div>
+            <span class="concept-label blue">Tu app &mdash; LOCAL</span>
+            <h4>FastAPI</h4>
+            <p>La <strong>aplicaci&oacute;n web</strong> que construiste. Expone una API REST con operaciones CRUD de tareas y un endpoint <code>/health</code> para que Kubernetes sepa si est&aacute; viva.</p>
+            <p>Corre dentro de pods de Kubernetes en el puerto <strong>8000</strong>.</p>
+        </div>
+        <div class="card card-accent-teal">
+            <div class="card-icon">&#128051;</div>
+            <span class="concept-label teal">Empaquetador &mdash; LOCAL</span>
+            <h4>Docker</h4>
+            <p>Convierte la aplicaci&oacute;n en una <strong>imagen inmutable</strong> que incluye todo lo necesario para correr: Python, dependencias y el c&oacute;digo. La imagen es el artefacto que viaja entre sistemas.</p>
+        </div>
+        <div class="card card-accent-red">
+            <div class="card-icon">&#129302;</div>
+            <span class="concept-label red">Robot CI &mdash; LOCAL</span>
+            <h4>Jenkins</h4>
+            <p>El <strong>servidor de automatizaci&oacute;n</strong>. Observa GitHub, ejecuta el pipeline con 5 stages y coordina toda la cadena. Corre en un contenedor Docker en tu m&aacute;quina.</p>
+        </div>
+        <div class="card card-accent-gold">
+            <div class="card-icon">&#128230;</div>
+            <span class="concept-label orange">Registry &mdash; &#9729;&#65039; NUBE</span>
+            <h4>Docker Hub</h4>
+            <p>El <strong>almac&eacute;n central de im&aacute;genes</strong>. Jenkins empuja la imagen construida aqu&iacute;, y Kubernetes la descarga desde aqu&iacute; para crear los pods. Es el puente entre los dos sistemas.</p>
+        </div>
+        <div class="card card-accent-purple">
+            <div class="card-icon">&#128025;</div>
+            <span class="concept-label purple">Fuente de verdad &mdash; &#9729;&#65039; NUBE</span>
+            <h4>GitHub</h4>
+            <p>El <strong>repositorio de c&oacute;digo</strong>. Contiene la aplicaci&oacute;n, el Jenkinsfile, el Dockerfile y los manifiestos de Kubernetes. Cada <code>push</code> aqu&iacute; dispara el pipeline.</p>
+        </div>
+        <div class="card card-accent-green">
+            <div class="card-icon">&#9096;&#65039;</div>
+            <span class="concept-label green">Orquestador &mdash; LOCAL</span>
+            <h4>Kubernetes</h4>
+            <p>El <strong>director de orquesta</strong> de contenedores. Mantiene 2 pods corriendo siempre, escala a 5 si hay mucha carga, reemplaza pods ca&iacute;dos y hace <em>rolling updates</em> sin downtime.</p>
+        </div>
+    </div>
+
+    <div class="info-box">
+        <strong>&#128203; &iquest;D&oacute;nde corre cada cosa?</strong>
+        <table style="width:100%; border-collapse:collapse; font-size:0.93em; margin-top:12px;">
+            <thead><tr style="background:#c8dff7;"><th style="padding:7px 12px; text-align:left;">Actor</th><th style="padding:7px 12px; text-align:left;">&iquest;D&oacute;nde?</th><th style="padding:7px 12px; text-align:left;">C&oacute;mo se levanta</th><th style="padding:7px 12px; text-align:left;">Puerto/URL</th></tr></thead>
+            <tbody>
+                <tr><td style="padding:6px 12px;"><strong>FastAPI (pods)</strong></td><td style="padding:6px 12px;">&#128187; LOCAL &mdash; Kubernetes</td><td style="padding:6px 12px;"><code>kubectl apply -f k8s/</code></td><td style="padding:6px 12px;"><code>localhost:80</code></td></tr>
+                <tr style="background:#f5f8fe;"><td style="padding:6px 12px;"><strong>Jenkins</strong></td><td style="padding:6px 12px;">&#128187; LOCAL &mdash; Docker</td><td style="padding:6px 12px;"><code>docker compose up</code> en <code>jenkins/</code></td><td style="padding:6px 12px;"><code>localhost:8080</code></td></tr>
+                <tr><td style="padding:6px 12px;"><strong>Docker Hub</strong></td><td style="padding:6px 12px;">&#9729;&#65039; NUBE &mdash; hub.docker.com</td><td style="padding:6px 12px;">Siempre disponible (cuenta gratuita)</td><td style="padding:6px 12px;">hub.docker.com</td></tr>
+                <tr style="background:#f5f8fe;"><td style="padding:6px 12px;"><strong>GitHub</strong></td><td style="padding:6px 12px;">&#9729;&#65039; NUBE &mdash; github.com</td><td style="padding:6px 12px;">Siempre disponible (repo p&uacute;blico/privado)</td><td style="padding:6px 12px;">github.com</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <hr class="divider">
+
+
+    <!-- ═══════════════════════════════════════════════
+         SECCIÓN 3 — FLUJO COMPLETO
+    ════════════════════════════════════════════════ -->
+    <h2 id="flujo">3. El flujo completo paso a paso</h2>
+    <p>
+        Desde que escribes c&oacute;digo hasta que el usuario puede consumir la nueva versi&oacute;n de la API,
+        ocurren <strong>7 eventos</strong> encadenados. La mayor&iacute;a son autom&aacute;ticos.
+    </p>
+
+    <!-- Diagrama SVG del flujo -->
+    <div class="diagram-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520">
+            <defs>
+                <linearGradient id="gdev"  x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4facfe"/><stop offset="100%" style="stop-color:#00f2fe"/></linearGradient>
+                <linearGradient id="ggh"   x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#24292e"/><stop offset="100%" style="stop-color:#444d56"/></linearGradient>
+                <linearGradient id="gjk"   x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#d33833"/><stop offset="100%" style="stop-color:#ff6b35"/></linearGradient>
+                <linearGradient id="ghub"  x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0db7ed"/><stop offset="100%" style="stop-color:#2496ed"/></linearGradient>
+                <linearGradient id="gk8s"  x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#326ce5"/><stop offset="100%" style="stop-color:#7b4cf5"/></linearGradient>
+                <linearGradient id="gpod"  x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#1a6334"/><stop offset="100%" style="stop-color:#27ae60"/></linearGradient>
+                <filter id="sh" x="-15%" y="-15%" width="130%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="rgba(0,0,0,0.4)"/></filter>
+                <marker id="aw"  markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="rgba(255,255,255,0.75)"/></marker>
+                <marker id="ateal" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#0db7ed"/></marker>
+                <marker id="agreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#27ae60"/></marker>
+            </defs>
+
+            <!-- Título -->
+            <text x="480" y="30" text-anchor="middle" fill="white" font-size="15" font-family="Roboto,sans-serif" font-weight="700">Flujo completo: git push → pod Running</text>
+
+            <!-- ZONA LOCAL -->
+            <rect x="14" y="48" width="600" height="440" rx="16" fill="rgba(74,172,254,0.05)" stroke="rgba(74,172,254,0.25)" stroke-width="1.5" stroke-dasharray="7,4"/>
+            <text x="26" y="66" fill="rgba(74,172,254,0.6)" font-size="11" font-family="Roboto,sans-serif" font-weight="600">💻 LOCAL (tu máquina)</text>
+
+            <!-- ZONA NUBE -->
+            <rect x="636" y="48" width="314" height="440" rx="16" fill="rgba(240,192,64,0.05)" stroke="rgba(240,192,64,0.25)" stroke-width="1.5" stroke-dasharray="7,4"/>
+            <text x="648" y="66" fill="rgba(240,192,64,0.6)" font-size="11" font-family="Roboto,sans-serif" font-weight="600">☁️ NUBE (internet)</text>
+
+            <!-- DEV -->
+            <g filter="url(#sh)"><rect x="30" y="100" width="108" height="88" rx="12" fill="url(#gdev)"/></g>
+            <text x="84" y="130" text-anchor="middle" fill="white" font-size="26">🧑‍💻</text>
+            <text x="84" y="155" text-anchor="middle" fill="white" font-size="11" font-family="Roboto,sans-serif" font-weight="700">Desarrollador</text>
+            <text x="84" y="170" text-anchor="middle" fill="rgba(255,255,255,0.75)" font-size="9.5" font-family="Fira Code,monospace">git push</text>
+            <text x="84" y="182" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="8.5" font-family="Roboto,sans-serif">① manual</text>
+
+            <!-- Arrow DEV → GH -->
+            <line x1="138" y1="144" x2="660" y2="144" stroke="rgba(255,255,255,0.6)" stroke-width="2.2" stroke-dasharray="8,4" marker-end="url(#aw)"/>
+            <text x="400" y="136" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="Roboto,sans-serif">git push (HTTPS)</text>
+
+            <!-- GH -->
+            <g filter="url(#sh)"><rect x="660" y="100" width="108" height="88" rx="12" fill="url(#ggh)"/></g>
+            <text x="714" y="130" text-anchor="middle" fill="white" font-size="26">🐙</text>
+            <text x="714" y="155" text-anchor="middle" fill="white" font-size="11" font-family="Roboto,sans-serif" font-weight="700">GitHub</text>
+            <text x="714" y="170" text-anchor="middle" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Roboto,sans-serif">repositorio</text>
+            <text x="714" y="182" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="8.5" font-family="Roboto,sans-serif">☁️ NUBE</text>
+
+            <!-- JENKINS BOX -->
+            <rect x="28" y="226" width="600" height="240" rx="12" fill="rgba(211,56,51,0.07)" stroke="rgba(211,56,51,0.3)" stroke-width="1.2" stroke-dasharray="5,3"/>
+            <text x="42" y="244" fill="rgba(255,100,80,0.6)" font-size="10.5" font-family="Roboto,sans-serif" font-weight="600">🤖 Jenkins (contenedor Docker en localhost:8080)</text>
+
+            <!-- Polling arrow GH → Jenkins -->
+            <path d="M 714 188 Q 714 258 628 270" stroke="rgba(255,180,100,0.7)" stroke-width="2" fill="none" marker-end="url(#aw)"/>
+            <text x="686" y="228" text-anchor="middle" fill="rgba(255,200,150,0.7)" font-size="9" font-family="Roboto,sans-serif">SCM poll</text>
+            <text x="686" y="240" text-anchor="middle" fill="rgba(255,200,150,0.55)" font-size="8.5" font-family="Roboto,sans-serif">c/5 min ②</text>
+
+            <!-- Stage boxes -->
+            <!-- Checkout -->
+            <g filter="url(#sh)"><rect x="44" y="258" width="94" height="60" rx="8" fill="rgba(45,53,97,0.9)" stroke="rgba(240,80,50,0.7)" stroke-width="1.5"/></g>
+            <text x="91" y="277" text-anchor="middle" fill="#f05032" font-size="18">①</text>
+            <text x="91" y="294" text-anchor="middle" fill="white" font-size="10.5" font-family="Roboto,sans-serif" font-weight="600">Checkout</text>
+            <text x="91" y="308" text-anchor="middle" fill="rgba(200,210,255,0.6)" font-size="8.5" font-family="Fira Code,monospace">git clone</text>
+
+            <!-- Test -->
+            <line x1="138" y1="288" x2="158" y2="288" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" marker-end="url(#aw)"/>
+            <g filter="url(#sh)"><rect x="158" y="258" width="94" height="60" rx="8" fill="rgba(45,53,97,0.9)" stroke="rgba(10,158,220,0.7)" stroke-width="1.5"/></g>
+            <text x="205" y="277" text-anchor="middle" fill="#0a9edc" font-size="18">②</text>
+            <text x="205" y="294" text-anchor="middle" fill="white" font-size="10.5" font-family="Roboto,sans-serif" font-weight="600">Test</text>
+            <text x="205" y="308" text-anchor="middle" fill="rgba(200,210,255,0.6)" font-size="8.5" font-family="Fira Code,monospace">pytest·JUnit</text>
+
+            <!-- Build -->
+            <line x1="252" y1="288" x2="272" y2="288" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" marker-end="url(#aw)"/>
+            <g filter="url(#sh)"><rect x="272" y="258" width="94" height="60" rx="8" fill="rgba(45,53,97,0.9)" stroke="rgba(36,150,237,0.7)" stroke-width="1.5"/></g>
+            <text x="319" y="277" text-anchor="middle" fill="#2496ed" font-size="18">③</text>
+            <text x="319" y="294" text-anchor="middle" fill="white" font-size="10.5" font-family="Roboto,sans-serif" font-weight="600">Build</text>
+            <text x="319" y="308" text-anchor="middle" fill="rgba(200,210,255,0.6)" font-size="8.5" font-family="Fira Code,monospace">docker build</text>
+
+            <!-- Push -->
+            <line x1="366" y1="288" x2="386" y2="288" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" marker-end="url(#aw)"/>
+            <g filter="url(#sh)"><rect x="386" y="258" width="94" height="60" rx="8" fill="rgba(45,53,97,0.9)" stroke="rgba(13,183,237,0.7)" stroke-width="1.5"/></g>
+            <text x="433" y="277" text-anchor="middle" fill="#0db7ed" font-size="18">④</text>
+            <text x="433" y="294" text-anchor="middle" fill="white" font-size="10.5" font-family="Roboto,sans-serif" font-weight="600">Push</text>
+            <text x="433" y="308" text-anchor="middle" fill="rgba(200,210,255,0.6)" font-size="8.5" font-family="Fira Code,monospace">docker push</text>
+
+            <!-- Deploy -->
+            <line x1="480" y1="288" x2="500" y2="288" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" marker-end="url(#aw)"/>
+            <g filter="url(#sh)"><rect x="500" y="258" width="94" height="60" rx="8" fill="rgba(45,53,97,0.9)" stroke="rgba(50,108,229,0.7)" stroke-width="1.5"/></g>
+            <text x="547" y="277" text-anchor="middle" fill="#a78bfa" font-size="18">⑤</text>
+            <text x="547" y="294" text-anchor="middle" fill="white" font-size="10.5" font-family="Roboto,sans-serif" font-weight="600">Deploy</text>
+            <text x="547" y="308" text-anchor="middle" fill="rgba(200,210,255,0.6)" font-size="8.5" font-family="Fira Code,monospace">kubectl apply</text>
+
+            <!-- Push stage → Docker Hub -->
+            <path d="M 433 258 Q 433 210 714 210 Q 800 210 800 255" stroke="rgba(13,183,237,0.7)" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#ateal)"/>
+            <text x="650" y="200" text-anchor="middle" fill="rgba(13,183,237,0.65)" font-size="9" font-family="Roboto,sans-serif">docker push ④</text>
+
+            <!-- Docker Hub -->
+            <g filter="url(#sh)"><rect x="656" y="255" width="118" height="80" rx="12" fill="url(#ghub)"/></g>
+            <text x="715" y="284" text-anchor="middle" fill="white" font-size="24">🐳</text>
+            <text x="715" y="306" text-anchor="middle" fill="white" font-size="11" font-family="Roboto,sans-serif" font-weight="700">Docker Hub</text>
+            <text x="715" y="320" text-anchor="middle" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Roboto,sans-serif">registry de imágenes</text>
+            <text x="715" y="330" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8" font-family="Roboto,sans-serif">☁️ NUBE</text>
+
+            <!-- K8s zone -->
+            <rect x="28" y="380" width="295" height="80" rx="10" fill="rgba(50,108,229,0.1)" stroke="rgba(50,108,229,0.35)" stroke-width="1.2"/>
+            <text x="42" y="396" fill="rgba(100,150,255,0.65)" font-size="9.5" font-family="Roboto,sans-serif" font-weight="600">⚙️ Kubernetes — namespace devops-project</text>
+
+            <!-- Deploy → K8s -->
+            <line x1="547" y1="318" x2="547" y2="420" stroke="rgba(50,108,229,0.6)" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#aw)"/>
+            <line x1="547" y1="420" x2="320" y2="420" stroke="rgba(50,108,229,0.6)" stroke-width="2" marker-end="url(#aw)"/>
+            <text x="440" y="415" text-anchor="middle" fill="rgba(100,150,255,0.65)" font-size="8.5" font-family="Roboto,sans-serif">kubectl apply ⑤</text>
+
+            <!-- Pods -->
+            <g filter="url(#sh)"><rect x="42" y="400" width="80" height="50" rx="8" fill="url(#gpod)"/></g>
+            <text x="82" y="420" text-anchor="middle" fill="white" font-size="14">🟢</text>
+            <text x="82" y="435" text-anchor="middle" fill="white" font-size="9.5" font-family="Roboto,sans-serif" font-weight="600">Pod 1</text>
+            <text x="82" y="445" text-anchor="middle" fill="rgba(200,255,200,0.7)" font-size="7.5" font-family="Fira Code,monospace">:8000</text>
+
+            <g filter="url(#sh)"><rect x="134" y="400" width="80" height="50" rx="8" fill="url(#gpod)"/></g>
+            <text x="174" y="420" text-anchor="middle" fill="white" font-size="14">🟢</text>
+            <text x="174" y="435" text-anchor="middle" fill="white" font-size="9.5" font-family="Roboto,sans-serif" font-weight="600">Pod 2</text>
+            <text x="174" y="445" text-anchor="middle" fill="rgba(200,255,200,0.7)" font-size="7.5" font-family="Fira Code,monospace">:8000</text>
+
+            <g filter="url(#sh)"><rect x="226" y="400" width="80" height="50" rx="8" fill="rgba(50,108,229,0.7)" stroke="rgba(120,170,255,0.5)" stroke-width="1.2"/></g>
+            <text x="266" y="420" text-anchor="middle" fill="white" font-size="11" font-family="Roboto,sans-serif" font-weight="600">Service</text>
+            <text x="266" y="434" text-anchor="middle" fill="rgba(200,220,255,0.8)" font-size="8.5" font-family="Roboto,sans-serif">LoadBalancer</text>
+            <text x="266" y="445" text-anchor="middle" fill="rgba(200,220,255,0.6)" font-size="7.5" font-family="Fira Code,monospace">80 → 8000</text>
+
+            <!-- K8s pull from Hub -->
+            <path d="M 715 335 Q 715 440 330 440" stroke="rgba(13,183,237,0.5)" stroke-width="1.8" fill="none" stroke-dasharray="5,3" marker-end="url(#ateal)"/>
+            <text x="560" y="458" text-anchor="middle" fill="rgba(13,183,237,0.6)" font-size="8.5" font-family="Roboto,sans-serif">docker pull ⑥</text>
+
+            <!-- User -->
+            <g filter="url(#sh)"><rect x="336" y="390" width="94" height="70" rx="12" fill="rgba(45,53,97,0.85)" stroke="rgba(100,200,255,0.4)" stroke-width="1.2"/></g>
+            <text x="383" y="415" text-anchor="middle" fill="white" font-size="22">👤</text>
+            <text x="383" y="435" text-anchor="middle" fill="white" font-size="10" font-family="Roboto,sans-serif" font-weight="600">Usuario</text>
+            <text x="383" y="448" text-anchor="middle" fill="rgba(200,220,255,0.65)" font-size="8.5" font-family="Fira Code,monospace">localhost/docs</text>
+            <text x="383" y="458" text-anchor="middle" fill="rgba(200,220,255,0.45)" font-size="8" font-family="Roboto,sans-serif">⑦</text>
+
+            <line x1="320" y1="430" x2="336" y2="430" stroke="rgba(100,200,255,0.5)" stroke-width="1.5" marker-end="url(#aw)"/>
+
+            <!-- Leyenda -->
+            <text x="640" y="398" fill="rgba(255,255,255,0.35)" font-size="9.5" font-family="Roboto,sans-serif" font-weight="600">LEYENDA</text>
+            <line x1="640" y1="412" x2="670" y2="412" stroke="rgba(255,255,255,0.65)" stroke-width="2" marker-end="url(#aw)"/>
+            <text x="675" y="416" fill="rgba(255,255,255,0.5)" font-size="8.5" font-family="Roboto,sans-serif">Flujo automático</text>
+            <line x1="640" y1="428" x2="670" y2="428" stroke="rgba(13,183,237,0.65)" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#ateal)"/>
+            <text x="675" y="432" fill="rgba(255,255,255,0.5)" font-size="8.5" font-family="Roboto,sans-serif">Pull de imagen</text>
+            <line x1="640" y1="444" x2="670" y2="444" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#aw)"/>
+            <text x="675" y="448" fill="rgba(255,255,255,0.5)" font-size="8.5" font-family="Roboto,sans-serif">Acción manual</text>
+        </svg>
+    </div>
+
+    <!-- Pasos del flujo detallados -->
+    <h3>Explicaci&oacute;n paso a paso</h3>
+    <div class="flow-steps">
+
+        <div class="flow-step">
+            <div class="flow-num c1">1</div>
+            <div class="flow-body">
+                <strong>&#128193; T&uacute; haces <code>git push</code> — MANUAL</strong>
+                Terminas de escribir c&oacute;digo (una nueva funcionalidad, un fix, un cambio de configuraci&oacute;n)
+                y ejecutas <code>git add . &amp;&amp; git commit -m "mi cambio" &amp;&amp; git push origin main</code>.
+                El commit llega al repositorio en <strong>GitHub</strong> (internet).
+            </div>
+        </div>
+        <div class="flow-connector">&#8659;</div>
+
+        <div class="flow-step">
+            <div class="flow-num c2">2</div>
+            <div class="flow-body">
+                <strong>&#128373;&#65039; Jenkins detecta el cambio — AUTOM&Aacute;TICO</strong>
+                Jenkins tiene un temporizador configurado con <code>pollSCM('H/5 * * * *')</code> que pregunta
+                a GitHub cada 5 minutos: "&iquest;hay commits nuevos?". En cuanto detecta uno, arranca el pipeline
+                leyendo el <code>Jenkinsfile</code> del propio repositorio.
+                <div class="analogy" style="margin-top:10px;">
+                    <div class="analogy-title">&#128233; Analog&iacute;a</div>
+                    Como un cartero que revisa el buz&oacute;n cada 5 minutos. Cuando encuentra carta, activa el proceso.
+                </div>
+            </div>
+        </div>
+        <div class="flow-connector">&#8659;</div>
+
+        <div class="flow-step">
+            <div class="flow-num c3">3</div>
+            <div class="flow-body">
+                <strong>&#129514; Stage Test — AUTOM&Aacute;TICO (dentro de Jenkins)</strong>
+                Jenkins crea un entorno virtual Python, instala las dependencias del <code>requirements.txt</code>
+                y ejecuta los 11 tests con <code>pytest tests/ -v --junit-xml=test-report.xml</code>.
+                Si alguno falla, el pipeline <strong>se detiene</strong> y no hay build ni deploy.
+                El reporte XML queda publicado en la UI de Jenkins como gr&aacute;fico de tendencia.
+            </div>
+        </div>
+        <div class="flow-connector">&#8659;</div>
+
+        <div class="flow-step">
+            <div class="flow-num c4">4</div>
+            <div class="flow-body">
+                <strong>&#127959;&#65039; Stage Build — AUTOM&Aacute;TICO (Docker en tu m&aacute;quina)</strong>
+                Jenkins llama al daemon Docker de tu m&aacute;quina (via el socket <code>/var/run/docker.sock</code>
+                montado en el contenedor Jenkins) y ejecuta:
+                <div class="code-block" style="margin:10px 0;">
+                    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> Stage Build</div>
+                    <pre><code><span class="cmd">docker build -t jaquimbayoc/devops-taskapi:5 .</span>
+<span class="cmd">docker tag  jaquimbayoc/devops-taskapi:5 jaquimbayoc/devops-taskapi:latest</span></code></pre>
+                </div>
+                El n&uacute;mero <code>5</code> es el <code>BUILD_NUMBER</code> de Jenkins, incrementa en cada ejecuci&oacute;n.
+                Siempre tambi&eacute;n se etiqueta como <code>latest</code>.
+            </div>
+        </div>
+        <div class="flow-connector">&#8659;</div>
+
+        <div class="flow-step">
+            <div class="flow-num c5">5</div>
+            <div class="flow-body">
+                <strong>&#128228; Stage Push — AUTOM&Aacute;TICO (LOCAL &#8594; NUBE)</strong>
+                Jenkins usa la credencial <code>dockerhub-creds</code> (almacenada de forma segura, nunca en logs)
+                para autenticarse y subir la imagen a Docker Hub:
+                <div class="code-block" style="margin:10px 0;">
+                    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> Stage Push</div>
+                    <pre><code><span class="cm"># La contraseña nunca aparece en los logs</span>
+<span class="cmd">echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin</span>
+<span class="cmd">docker push jaquimbayoc/devops-taskapi:5</span>
+<span class="cmd">docker push jaquimbayoc/devops-taskapi:latest</span></code></pre>
+                </div>
+                Ahora la imagen est&aacute; en <strong>hub.docker.com</strong> disponible para cualquiera que tenga permisos.
+            </div>
+        </div>
+        <div class="flow-connector">&#8659;</div>
+
+        <div class="flow-step">
+            <div class="flow-num c6">6</div>
+            <div class="flow-body">
+                <strong>&#128640; Stage Deploy — AUTOM&Aacute;TICO (NUBE &#8594; LOCAL)</strong>
+                Jenkins ejecuta comandos <code>kubectl</code> que le hablan al API server de Kubernetes
+                (el que corre dentro de Docker Desktop). Hay un detalle t&eacute;cnico importante:
+                <div class="warn-box" style="margin:10px 0;">
+                    <strong>&#9888;&#65039; El problema del kubeconfig:</strong><br>
+                    Jenkins corre <em>dentro</em> de un contenedor Docker. El kubeconfig usa <code>127.0.0.1</code>
+                    como direcci&oacute;n del API server de Kubernetes. Pero desde dentro de un contenedor,
+                    <code>127.0.0.1</code> apunta al propio contenedor Jenkins, no al host.
+                    <br><br>
+                    <strong>La soluci&oacute;n:</strong> El Jenkinsfile copia el kubeconfig y reemplaza
+                    <code>127.0.0.1</code> por <code>host.docker.internal</code> (nombre especial que Docker Desktop
+                    provee para llegar al host desde dentro de un contenedor).
+                </div>
+                <div class="code-block" style="margin:10px 0;">
+                    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> Stage Deploy (fragmento)</div>
+                    <pre><code><span class="cm"># Copiar y parchar el kubeconfig</span>
+<span class="cmd">cp $HOME/.kube/config /tmp/kubeconfig</span>
+<span class="cmd">sed -i 's/127.0.0.1/host.docker.internal/g' /tmp/kubeconfig</span>
+<span class="cmd">export KUBECONFIG=/tmp/kubeconfig</span>
+
+<span class="cm"># Aplicar manifiestos y actualizar imagen</span>
+<span class="cmd">kubectl apply -f k8s/ --validate=false</span>
+<span class="cmd">kubectl set image deployment/taskapi taskapi=jaquimbayoc/devops-taskapi:5 -n devops-project</span>
+<span class="cmd">kubectl rollout status deployment/taskapi -n devops-project --timeout=120s</span></code></pre>
+                </div>
+                Kubernetes descarga la imagen nueva de Docker Hub y hace un <em>rolling update</em>:
+                levanta pods nuevos antes de terminar los viejos. La app nunca deja de responder.
+            </div>
+        </div>
+        <div class="flow-connector">&#8659;</div>
+
+        <div class="flow-step">
+            <div class="flow-num c7">7</div>
+            <div class="flow-body">
+                <strong>&#128101; El usuario consume la nueva versi&oacute;n — TRANSPARENTE</strong>
+                El Service de Kubernetes (tipo <code>LoadBalancer</code>) expone los pods en el puerto 80
+                del host. El usuario accede a <code>http://localhost/docs</code> o <code>http://localhost/health</code>
+                y ya est&aacute; usando la versi&oacute;n nueva, sin haber hecho nada manualmente.
+            </div>
+        </div>
+
+    </div>
+
+    <div class="success-box">
+        <strong>&#9201;&#65039; Tiempo total del ciclo:</strong> Desde el <code>git push</code> hasta que el nuevo c&oacute;digo corre en Kubernetes:
+        <strong>~4 minutos</strong> (espera del poll ~3 min + pipeline ~1.5 min). Si se dispara manualmente con
+        "Build Now", <strong>~90 segundos</strong>.
+    </div>
+
+    <hr class="divider">
+
+
+    <!-- ═══════════════════════════════════════════════
+         SECCIÓN 4 — CONECTIVIDAD
+    ════════════════════════════════════════════════ -->
+    <h2 id="conectividad">4. Conectividad — &iquest;qui&eacute;n habla con qui&eacute;n y c&oacute;mo?</h2>
+    <p>Esta es la tabla completa de conexiones del sistema. Cada fila es una conexi&oacute;n real con su protocolo, direcci&oacute;n y raz&oacute;n de existir.</p>
+
+    <table class="conn-table">
+        <thead>
+            <tr>
+                <th>Origen</th>
+                <th>&#8594;</th>
+                <th>Destino</th>
+                <th>C&oacute;mo / Puerto</th>
+                <th>Para qu&eacute;</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>&#128187; T&uacute; (terminal)</td>
+                <td>&#8594;</td>
+                <td>&#9729;&#65039; GitHub</td>
+                <td>HTTPS :443 <span class="badge-proto http">HTTPS</span></td>
+                <td><code>git push</code> sube el c&oacute;digo nuevo. Dispara el ciclo completo.</td>
+            </tr>
+            <tr>
+                <td>&#128187; Jenkins</td>
+                <td>&#8594;</td>
+                <td>&#9729;&#65039; GitHub</td>
+                <td>HTTPS :443 <span class="badge-proto http">HTTPS</span></td>
+                <td>SCM polling (<code>H/5 * * * *</code>): Jenkins pregunta si hay commits nuevos cada 5 minutos. Si los hay, clona el repo.</td>
+            </tr>
+            <tr>
+                <td>&#128187; Jenkins (contenedor)</td>
+                <td>&#8594;</td>
+                <td>&#128187; Docker daemon (host)</td>
+                <td>Unix socket <span class="badge-proto sock">SOCKET</span></td>
+                <td>Jenkins usa el Docker del <em>host</em> (no el del contenedor) para construir imágenes. Esto es el montaje <code>/var/run/docker.sock:/var/run/docker.sock</code> en <code>jenkins/docker-compose.yml</code>.</td>
+            </tr>
+            <tr>
+                <td>&#128187; Jenkins</td>
+                <td>&#8594;</td>
+                <td>&#9729;&#65039; Docker Hub</td>
+                <td>HTTPS :443 <span class="badge-proto http">HTTPS</span></td>
+                <td><code>docker push</code> en el stage Push. Usa el PAT (Personal Access Token) almacenado como credencial en Jenkins con ID <code>dockerhub-creds</code>.</td>
+            </tr>
+            <tr>
+                <td>&#128187; Jenkins (contenedor)</td>
+                <td>&#8594;</td>
+                <td>&#128187; Kubernetes API server</td>
+                <td>HTTPS :6443 <span class="badge-proto tcp">TCP</span></td>
+                <td><code>kubectl apply</code> en el stage Deploy. La conexión va a <code>host.docker.internal:6443</code> (el API server de Kubernetes de Docker Desktop). El kubeconfig se parchea para cambiar <code>127.0.0.1</code> por <code>host.docker.internal</code>.</td>
+            </tr>
+            <tr>
+                <td>&#128187; Kubernetes (pods)</td>
+                <td>&#8594;</td>
+                <td>&#9729;&#65039; Docker Hub</td>
+                <td>HTTPS :443 <span class="badge-proto http">HTTPS</span></td>
+                <td><code>docker pull</code> autom&aacute;tico cuando Kubernetes crea un pod nuevo. La imagen se descarga de Docker Hub con <code>imagePullPolicy: Always</code>, garantizando que siempre se use la versi&oacute;n m&aacute;s reciente.</td>
+            </tr>
+            <tr>
+                <td>&#128187; T&uacute; (navegador)</td>
+                <td>&#8594;</td>
+                <td>&#128187; Service K8s (LoadBalancer)</td>
+                <td>HTTP :80 <span class="badge-proto http">HTTP</span></td>
+                <td>El Service de Kubernetes expone los pods en <code>localhost:80</code>. El Service balancea el tr&aacute;fico entre Pod 1 y Pod 2 de forma transparente.</td>
+            </tr>
+            <tr>
+                <td>&#128187; Service K8s</td>
+                <td>&#8594;</td>
+                <td>&#128187; Pods FastAPI</td>
+                <td>TCP :8000 <span class="badge-proto tcp">TCP</span></td>
+                <td>El Service redirige el tr&aacute;fico del puerto 80 al puerto 8000 de cada pod. FastAPI (Uvicorn) escucha en <code>0.0.0.0:8000</code> dentro del contenedor.</td>
+            </tr>
+            <tr>
+                <td>&#128187; Kubernetes (kubelet)</td>
+                <td>&#8594;</td>
+                <td>&#128187; Pod FastAPI <code>/health</code></td>
+                <td>HTTP :8000 <span class="badge-proto rest">REST</span></td>
+                <td>Liveness probe y readiness probe. Kubernetes pregunta a cada pod <code>GET /health</code> peri&oacute;dicamente. Si responde <code>{"status":"ok"}</code> con HTTP 200, el pod est&aacute; sano. Si no, Kubernetes reinicia el pod.</td>
+            </tr>
+            <tr>
+                <td>&#128187; T&uacute; (navegador)</td>
+                <td>&#8594;</td>
+                <td>&#128187; Jenkins UI</td>
+                <td>HTTP :8080 <span class="badge-proto http">HTTP</span></td>
+                <td>La interfaz web de Jenkins donde ves el estado del pipeline, los logs de cada stage y el reporte JUnit.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>El truco del Docker socket</h3>
+    <div class="concept">
+        <div class="concept-text">
+            <p>Jenkins corre <em>dentro</em> de un contenedor Docker. Pero el stage <em>Build</em> necesita ejecutar <code>docker build</code>. &iquest;C&oacute;mo?</p>
+            <p>La soluci&oacute;n es montar el socket Unix del daemon Docker del host dentro del contenedor Jenkins:</p>
+            <div class="code-block">
+                <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> jenkins/docker-compose.yml</div>
+                <pre><code><span class="key">volumes</span>:
+  <span class="cm"># Montar el socket del host dentro de Jenkins</span>
+  - <span class="val">/var/run/docker.sock:/var/run/docker.sock</span>
+  - <span class="val">~/.kube:/var/jenkins_home/.kube:ro</span></code></pre>
+            </div>
+            <p>Cuando Jenkins ejecuta <code>docker build</code>, los comandos llegan al daemon Docker del <strong>host</strong>, no a un daemon dentro del contenedor Jenkins (que no existe). Las im&aacute;genes se construyen en el host y est&aacute;n disponibles localmente.</p>
+        </div>
+        <div class="concept-visual">
+            <span class="concept-label teal">Docker-in-Docker vs Socket</span>
+            <p><strong>&#10060; Docker-in-Docker (DinD):</strong><br>
+            Correr un daemon Docker <em>dentro</em> del contenedor Jenkins. Complejo, inseguro y lento.</p>
+            <p><strong>&#9989; Socket mounting (este proyecto):</strong><br>
+            El contenedor Jenkins comparte el daemon Docker del host via el socket Unix. Simple, r&aacute;pido y est&aacute;ndar en entornos de desarrollo.</p>
+            <div class="analogy">
+                <div class="analogy-title">&#127981; Analog&iacute;a</div>
+                Como si el robot (Jenkins) no tuviera sus propias herramientas, pero tiene acceso al taller del due&ntilde;o de casa (el host) a trav&eacute;s de una ventanilla (el socket).
+            </div>
+        </div>
+    </div>
+
+    <h3>El truco del kubeconfig</h3>
+    <div class="concept">
+        <div class="concept-visual">
+            <span class="concept-label purple">Problema de red</span>
+            <p><strong>Kubeconfig original:</strong></p>
+            <div class="code-block">
+                <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> ~/.kube/config (fragmento)</div>
+                <pre><code><span class="key">server</span>: <span class="val">https://127.0.0.1:6443</span>
+<span class="cm"># ↑ funciona desde el host, pero...</span>
+<span class="cm"># desde el contenedor Jenkins, 127.0.0.1</span>
+<span class="cm"># apunta al propio Jenkins, ¡no al host!</span></code></pre>
+            </div>
+            <p><strong>Soluci&oacute;n en el Jenkinsfile:</strong></p>
+            <div class="code-block">
+                <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> Stage Deploy</div>
+                <pre><code><span class="cmd">cp $HOME/.kube/config /tmp/kubeconfig</span>
+<span class="cm"># Reemplazar 127.0.0.1 por la dirección del host</span>
+<span class="cmd">sed -i 's/127.0.0.1/host.docker.internal/g' /tmp/kubeconfig</span>
+<span class="cmd">export KUBECONFIG=/tmp/kubeconfig</span></code></pre>
+            </div>
+        </div>
+        <div class="concept-text">
+            <p><code>host.docker.internal</code> es un nombre DNS especial que <strong>Docker Desktop</strong> inyecta en cada contenedor. Resuelve a la direcci&oacute;n IP del host (tu m&aacute;quina), permitiendo al contenedor Jenkins comunicarse con el API server de Kubernetes que corre en el host.</p>
+            <div class="analogy">
+                <div class="analogy-title">&#127981; Analog&iacute;a</div>
+                Est&aacute;s en un hotel (el contenedor Jenkins) y quieres llamar a la recepci&oacute;n del edificio (Kubernetes).
+                Si marcas el 127.0.0.1 llamas al tel&eacute;fono de tu propia habitaci&oacute;n.
+                <code>host.docker.internal</code> es como marcar el n&uacute;mero directo de recepci&oacute;n del edificio.
+            </div>
+            <p>Este parche se hace en una <strong>copia temporal</strong> (<code>/tmp/kubeconfig</code>) para no modificar el kubeconfig original que Jenkins tiene montado en modo de solo lectura.</p>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+
+    <!-- ═══════════════════════════════════════════════
+         SECCIÓN 5 — CONCEPTOS CLAVE
+    ════════════════════════════════════════════════ -->
+    <h2 id="conceptos">5. Conceptos clave con ejemplos simples</h2>
+
+    <h3>&#127959;&#65039; Imagen Docker vs Contenedor</h3>
+    <div class="concept">
+        <div class="concept-text">
+            <div class="analogy">
+                <div class="analogy-title">&#128218; Analog&iacute;a</div>
+                La <strong>imagen</strong> es el molde de galletas. El <strong>contenedor</strong> es la galleta resultante.
+                Con el mismo molde puedes hacer miles de galletas id&eacute;nticas. Romper una galleta no afecta las dem&aacute;s ni el molde.
+            </div>
+            <p>La <strong>imagen</strong> es inmutable (no cambia) y est&aacute; guardada en Docker Hub. El <strong>contenedor</strong> es una instancia corriendo de esa imagen. Kubernetes crea contenedores (pods) a partir de la imagen.</p>
+            <p>Cada vez que Jenkins termina el stage Build, produce una nueva imagen etiquetada con el n&uacute;mero de build (<code>:5</code>, <code>:6</code>...) y tambi&eacute;n como <code>:latest</code>.</p>
+        </div>
+        <div class="concept-visual">
+            <span class="concept-label blue">Imagen vs Contenedor</span>
+            <div class="code-block">
+                <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> Relaci&oacute;n imagen ↔ contenedores</div>
+                <pre><code><span class="cm"># Una imagen → múltiples contenedores</span>
+<span class="fn">devops-taskapi:5</span>  <span class="cm"># imagen (en Docker Hub)</span>
+    ├─ <span class="cls">Pod 1</span>  <span class="cm"># contenedor corriendo</span>
+    ├─ <span class="cls">Pod 2</span>  <span class="cm"># contenedor corriendo</span>
+    └─ <span class="cls">Pod 3</span>  <span class="cm"># si HPA escala</span>
+
+<span class="cm"># Verificar imágenes locales</span>
+<span class="cmd">docker images</span>
+<span class="out">REPOSITORY                 TAG   IMAGE ID</span>
+<span class="out">devops-taskapi             5     a1b2c3d4e5f6</span>
+<span class="out">devops-taskapi             latest a1b2c3d4e5f6</span></code></pre>
+            </div>
+        </div>
+    </div>
+
+    <h3>&#128230; &iquest;Por qu&eacute; necesitamos Docker Hub?</h3>
+    <div class="info-box">
+        <strong>Problema:</strong> Jenkins construye la imagen en tu m&aacute;quina. Kubernetes tambi&eacute;n corre en tu m&aacute;quina.
+        &iquest;No podr&iacute;an comunicarse directamente?<br><br>
+        <strong>En este proyecto s&iacute;</strong>, t&eacute;cnicamente podr&iacute;an. Pero usamos Docker Hub para practicar el
+        flujo real de producci&oacute;n, donde Jenkins y Kubernetes est&aacute;n en m&aacute;quinas diferentes
+        (un servidor CI y un cl&uacute;ster en la nube). Docker Hub es el punto neutral donde ambos se encuentran:
+        Jenkins empuja, Kubernetes jala.
+    </div>
+
+    <h3>&#9096;&#65039; Kubernetes — sus piezas en este proyecto</h3>
+    <div class="card-grid">
+        <div class="card card-accent-blue">
+            <h4>&#128193; Namespace</h4>
+            <p>Un espacio de nombres aislado dentro del cl&uacute;ster. Todos los recursos del proyecto viven en <code>devops-project</code>.</p>
+            <p>Es como una carpeta: organiza y a&iacute;sla los recursos de un proyecto del resto del cl&uacute;ster.</p>
+        </div>
+        <div class="card card-accent-teal">
+            <h4>&#128640; Deployment</h4>
+            <p>Declara cu&aacute;ntos pods deben correr y c&oacute;n qu&eacute; imagen. Kubernetes garantiza que siempre haya exactamente <strong>2 pods</strong> corriendo.</p>
+            <p>Si un pod cae, el Deployment levanta uno nuevo autom&aacute;ticamente.</p>
+        </div>
+        <div class="card card-accent-green">
+            <h4>&#128268; Service</h4>
+            <p>Expone los pods con una direcci&oacute;n estable. Sin &eacute;l, los pods tienen IPs que cambian cada vez que se recrean.</p>
+            <p>Tipo <code>LoadBalancer</code>: mapea <code>localhost:80</code> → pods en puerto <code>8000</code> y balancea el tr&aacute;fico.</p>
+        </div>
+        <div class="card card-accent-gold">
+            <h4>&#128220; ConfigMap</h4>
+            <p>Variables de entorno inyectadas en los pods. Permite cambiar configuraci&oacute;n sin reconstruir la imagen.</p>
+            <p>En el proyecto: <code>PYTHONUNBUFFERED=1</code> y <code>APP_ENV=production</code>.</p>
+        </div>
+        <div class="card card-accent-purple">
+            <h4>&#128200; HPA</h4>
+            <p><em>Horizontal Pod Autoscaler</em>. Monitoriza el uso de CPU de los pods. Si supera el <strong>60%</strong>, escala de 2 a m&aacute;ximo 5 pods.</p>
+            <p>Cuando la carga baja, reduce los pods autom&aacute;ticamente.</p>
+        </div>
+        <div class="card card-accent-red">
+            <h4>&#127973; Probes</h4>
+            <p><strong>Liveness:</strong> &iquest;el pod est&aacute; vivo? Si falla, lo reinicia.<br>
+            <strong>Readiness:</strong> &iquest;el pod est&aacute; listo para recibir tr&aacute;fico? Si falla, lo quita del Service.</p>
+            <p>Ambas consultan <code>GET /health → {"status":"ok"}</code>.</p>
+        </div>
+    </div>
+
+    <h3>&#129302; Pipeline declarativo de Jenkins</h3>
+    <p>El <code>Jenkinsfile</code> define el pipeline como c&oacute;digo versionado en el repositorio. Esto se llama <em>Pipeline as Code</em>.</p>
+    <div class="code-block">
+        <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> Jenkinsfile — estructura resumida</div>
+        <pre><code><span class="kw">pipeline</span> {
+    <span class="kw">agent</span> <span class="fn">any</span>                          <span class="cm">// correr en cualquier agente disponible</span>
+    <span class="kw">environment</span> {
+        <span class="key">IMAGE_NAME</span> = <span class="st">"usuario/devops-taskapi"</span>
+    }
+    <span class="kw">triggers</span> { <span class="fn">pollSCM</span>(<span class="st">'H/5 * * * *'</span>) }  <span class="cm">// revisar GitHub cada 5 min</span>
+
+    <span class="kw">stages</span> {
+        <span class="kw">stage</span>(<span class="st">'Checkout'</span>) { … }           <span class="cm">// ① clonar código</span>
+        <span class="kw">stage</span>(<span class="st">'Test'</span>)     { … }           <span class="cm">// ② pytest 11 tests</span>
+        <span class="kw">stage</span>(<span class="st">'Build'</span>)    { … }           <span class="cm">// ③ docker build</span>
+        <span class="kw">stage</span>(<span class="st">'Push'</span>)     { … }           <span class="cm">// ④ docker push → Docker Hub</span>
+        <span class="kw">stage</span>(<span class="st">'Deploy'</span>)   { … }           <span class="cm">// ⑤ kubectl apply → K8s</span>
+    }
+
+    <span class="kw">post</span> {
+        <span class="kw">always</span>  { <span class="cm">// siempre: limpiar workspace y cerrar sesión Docker</span> }
+        <span class="kw">success</span> { <span class="cm">// solo si todo verde: log de éxito</span> }
+        <span class="kw">failure</span> { <span class="cm">// solo si hay error: log de fallo</span> }
+    }
+}</code></pre>
+    </div>
+
+    <div class="orange-box">
+        <strong>&#127775; Por qu&eacute; el orden de los stages importa:</strong><br>
+        Si los tests fallan en el stage <code>Test</code>, el pipeline se detiene. <strong>Nunca se construye ni se sube una imagen de c&oacute;digo roto.</strong>
+        Esto garantiza que solo c&oacute;digo probado llega a producci&oacute;n.
+    </div>
+
+    <h3>&#128009; El Dockerfile multistage</h3>
+    <div class="concept">
+        <div class="concept-text">
+            <p>El Dockerfile usa dos etapas para producir una imagen m&iacute;nima y segura:</p>
+            <ul>
+                <li><strong>builder:</strong> instala todas las dependencias en un directorio temporal.</li>
+                <li><strong>runtime:</strong> copia solo los archivos instalados (no las herramientas de compilaci&oacute;n) a una imagen Python slim limpia. La imagen final es m&aacute;s peque&ntilde;a y no expone herramientas de construcci&oacute;n.</li>
+            </ul>
+            <p>Adem&aacute;s, la app corre con un usuario sin privilegios (<code>appuser</code>). Si alguien explota una vulnerabilidad en la app, no tiene acceso root al contenedor.</p>
+        </div>
+        <div class="concept-visual">
+            <span class="concept-label teal">Dockerfile multistage</span>
+            <div class="code-block">
+                <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> Dockerfile</div>
+                <pre><code><span class="cm"># Etapa 1: instalar deps</span>
+<span class="kw">FROM</span> <span class="fn">python:3.12-slim</span> <span class="kw">AS</span> <span class="cls">builder</span>
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --prefix=/install -r requirements.txt
+
+<span class="cm"># Etapa 2: imagen mínima</span>
+<span class="kw">FROM</span> <span class="fn">python:3.12-slim</span> <span class="kw">AS</span> <span class="cls">runtime</span>
+<span class="kw">COPY</span> --from=builder /install /usr/local
+<span class="kw">COPY</span> app/ ./app/
+<span class="kw">RUN</span> adduser --disabled-password appuser
+<span class="kw">USER</span> appuser          <span class="cm"># sin privilegios</span>
+<span class="kw">CMD</span> [<span class="st">"uvicorn"</span>, <span class="st">"app.main:app"</span>, ...]</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+
+    <!-- ═══════════════════════════════════════════════
+         SECCIÓN 6 — FAQ
+    ════════════════════════════════════════════════ -->
+    <h2 id="faq">6. Preguntas frecuentes</h2>
+
+    <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">
+            &iquest;Por qu&eacute; Jenkins no puede simplemente hacer <code>kubectl apply</code> sin el parche del kubeconfig?
+            <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+            Porque Jenkins corre <em>dentro</em> de un contenedor Docker. El archivo kubeconfig le dice a
+            <code>kubectl</code> que el API server de Kubernetes est&aacute; en <code>127.0.0.1:6443</code>.
+            Pero desde dentro de un contenedor, <code>127.0.0.1</code> (localhost) apunta al <em>propio contenedor</em>,
+            no al host donde Kubernetes realmente corre. El parche con <code>host.docker.internal</code>
+            corrige la direcci&oacute;n para que apunte al host correctamente.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">
+            &iquest;Qu&eacute; pasa si un test falla?
+            <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+            El pipeline se detiene en el stage <em>Test</em>. Los stages <em>Build</em>, <em>Push</em> y <em>Deploy</em>
+            no se ejecutan. La versi&oacute;n anterior sigue corriendo en Kubernetes sin cambios.
+            Jenkins marca el build como FAILED y publica el reporte JUnit mostrando qu&eacute; test fall&oacute;.
+            La app en producci&oacute;n nunca ve c&oacute;digo roto.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">
+            &iquest;Qu&eacute; es el <code>emptyDir</code> en el Deployment y por qu&eacute; se usa?
+            <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+            <code>emptyDir</code> es un volumen temporal que vive mientras el pod existe. Se usa para que la base de datos
+            SQLite (<code>/app/data/tasks.db</code>) no se pierda si el contenedor se reinicia por un crash (solo si el
+            <em>pod</em> se elimina se pierde). En producci&oacute;n real se usar&iacute;a un
+            <code>PersistentVolumeClaim</code> con almacenamiento externo. Para este entorno de aprendizaje,
+            <code>emptyDir</code> es suficiente porque los datos son de prueba.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">
+            &iquest;Por qu&eacute; <code>imagePullPolicy: Always</code> en el Deployment?
+            <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+            Porque el tag <code>latest</code> no cambia entre builds, solo cambia a qu&eacute; imagen apunta.
+            Sin <code>imagePullPolicy: Always</code>, si Kubernetes ya tiene la imagen <code>latest</code>
+            cacheada localmente, la usar&aacute; aunque Docker Hub tenga una versi&oacute;n m&aacute;s nueva.
+            Con <code>Always</code>, Kubernetes siempre verifica con Docker Hub y descarga la &uacute;ltima
+            versi&oacute;n antes de crear cada pod. Esto garantiza que cada deploy use el c&oacute;digo reci&eacute;n pusheado.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">
+            &iquest;C&oacute;mo sabe Kubernetes que un pod est&aacute; sano?
+            <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+            A trav&eacute;s de las <em>probes</em> definidas en el Deployment:<br><br>
+            <strong>Liveness probe:</strong> Kubernetes hace <code>GET /health</code> al pod cada 10 segundos.
+            Si falla 3 veces consecutivas, reinicia el pod. Detecta estados bloqueados (deadlocks).<br><br>
+            <strong>Readiness probe:</strong> Misma consulta, pero determina si el pod est&aacute; listo para recibir
+            tr&aacute;fico del Service. Mientras el pod no est&eacute; listo, el Service no le env&iacute;a peticiones.
+            Esto evita que los usuarios reciban errores durante el arranque de un pod nuevo.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">
+            &iquest;Qu&eacute; significa que el HPA escala al 60% de CPU?
+            <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+            El HPA (Horizontal Pod Autoscaler) monitoriza el uso de CPU de todos los pods del Deployment.
+            Si el promedio supera el 60% del l&iacute;mite de CPU definido en el Deployment, a&ntilde;ade un pod m&aacute;s
+            (hasta el m&aacute;ximo de 5). Si la carga baja, reduce los pods (hasta el m&iacute;nimo de 2).
+            <br><br>
+            Por ejemplo: si cada pod tiene l&iacute;mite de 200m CPU y el promedio de los 2 pods es 130m (65%),
+            el HPA escala a 3 pods para que el promedio baje a ~87m (43%), por debajo del umbral.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">
+            &iquest;Qu&eacute; es un rolling update y por qu&eacute; no hay downtime?
+            <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-a">
+            Un <em>rolling update</em> es la estrategia de actualizaci&oacute;n por defecto de Kubernetes.
+            En lugar de bajar todos los pods y levantar los nuevos (lo que causar&iacute;a downtime),
+            Kubernetes levanta un pod nuevo con la imagen actualizada, espera a que est&eacute; Ready (readiness probe),
+            y solo entonces elimina un pod viejo. Repite hasta actualizar todos.<br><br>
+            Con 2 r&eacute;plicas: siempre hay al menos 1 pod corriendo durante el deploy. Los usuarios
+            no notan la transici&oacute;n.
+        </div>
+    </div>
+
+</div><!-- /container -->
+</main>
+
+<footer class="main-footer">
+    <div class="container">
+        <p><strong>Arquitectura y Conceptos &mdash; DevOps Task Manager API</strong></p>
+        <p>Especializaci&oacute;n en Arquitectura de Software &middot; DevOps e Integraci&oacute;n Continua &middot; 2026</p>
+        <div class="footer-links">
+            <a href="trabajo-integrador.html">&#127968; Trabajo Integrador</a>
+            <a href="avance-semana-1.html">&#128013; Semana 1</a>
+            <a href="avance-semana-2.html">&#129302; Semana 2</a>
+            <a href="avance-semana-3.html">&#9096;&#65039; Semana 3</a>
+        </div>
+        <p style="margin-top:16px; font-size:0.85em; opacity:0.6;">FastAPI &middot; Docker &middot; Jenkins &middot; Kubernetes &middot; Docker Hub &middot; GitHub</p>
+    </div>
+</footer>
+
+<button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="scrollTopBtn" title="Ir arriba">&#8679;</button>
+
+<script>
+    window.onscroll = function() {
+        document.getElementById("scrollTopBtn").style.display =
+            (document.documentElement.scrollTop > 300) ? "block" : "none";
+    };
+    function toggle(el) {
+        const item = el.parentElement;
+        item.classList.toggle("open");
+    }
+</script>
+</body>
+</html>
