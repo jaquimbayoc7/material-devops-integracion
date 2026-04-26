@@ -200,6 +200,7 @@
                 <li><a href="#paso21">21. Stage Deploy</a></li>
                 <li><a href="#paso22">22. Validaci&oacute;n E2E</a></li>
                 <li><a href="#verificacion">&#9989; Verificaci&oacute;n</a></li>
+                <li><a href="#arranque">&#9654;&#65038; Gu&iacute;a de arranque</a></li>
             </ul>
         </nav>
     </div>
@@ -1072,6 +1073,485 @@ default           Active   2d</span></code></pre>
         }
     }
 }</code></pre>
+        </div>
+
+        <!-- ════════════════════ GUÍA DE ARRANQUE ════════════════════ -->
+        <hr class="divider">
+        <h2 id="arranque">&#9654;&#65038; Guía de arranque completa — paso a paso</h2>
+        <p>
+            Esta sección cubre cómo levantar cada proceso desde cero en una sesión nueva y
+            qué deberías ver en cada etapa. Sigue el orden exacto; algunos pasos dependen
+            de los anteriores.
+        </p>
+
+        <!-- ── PASO A: Docker Desktop ── -->
+        <div class="step-card">
+            <div class="step-header s1">
+                <div class="step-num">A</div>
+                <div class="step-header-text">
+                    <h3>Docker Desktop + Kubernetes</h3>
+                    <div class="step-desc">Punto de partida — ambos deben estar activos antes de cualquier otra cosa</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <ol class="ui-steps">
+                    <li>Abre <strong>Docker Desktop</strong> desde el menú de inicio.</li>
+                    <li>Espera a que el ícono de la ballena en la barra del sistema muestre estado <em>Running</em> (fondo verde).</li>
+                    <li>Ve a <strong>Settings → Kubernetes</strong> y confirma que el checkbox <em>"Enable Kubernetes"</em> está activo. Si no lo está, márcalo y haz clic en <em>"Apply &amp; Restart"</em>.</li>
+                    <li>Espera a que el indicador de Kubernetes en la esquina inferior izquierda de Docker Desktop muestre dos puntos verdes: uno para Docker y uno para Kubernetes.</li>
+                </ol>
+
+                <h3>Verificación</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cmd">docker version</span>
+<span class="out">Client: Docker Engine - Community
+ Version: 27.x.x</span>
+<span class="out">Server: Docker Desktop
+ Engine Version: 27.x.x</span>
+
+<span class="cmd">kubectl cluster-info</span>
+<span class="out">Kubernetes control plane is running at https://127.0.0.1:6443</span>
+<span class="out">CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy</span></code></pre>
+                </div>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; Si <code>kubectl cluster-info</code> devuelve error de conexión</strong><br>
+                    Docker Desktop tardó menos de 60&nbsp;s en iniciar Kubernetes. Espera 1-2 minutos y vuelve a intentarlo.
+                    Si persiste, desde Docker Desktop haz <em>Kubernetes → Reset Kubernetes cluster</em>.
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PASO B: Jenkins ── -->
+        <div class="step-card">
+            <div class="step-header s2">
+                <div class="step-num">B</div>
+                <div class="step-header-text">
+                    <h3>Levantar Jenkins</h3>
+                    <div class="step-desc">docker compose up desde la carpeta jenkins/ — container_name: jenkins</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cm"># Moverse a la carpeta de Jenkins (dentro del repo)</span>
+<span class="cmd">cd jenkins</span>
+
+<span class="cm"># Primera vez: construir la imagen y levantar en background</span>
+<span class="cmd">docker compose up -d --build</span>
+<span class="out">[+] Building 45.2s (12/12) FINISHED
+[+] Running 1/1
+ ✔ Container jenkins  Started</span>
+
+<span class="cm"># Verificar que el contenedor arrancó</span>
+<span class="cmd">docker compose ps</span>
+<span class="out">NAME      IMAGE           COMMAND              STATUS          PORTS
+jenkins   jenkins-jenkins "/docker-entrypoint…"  Up 30 seconds   0.0.0.0:8080->8080/tcp, 0.0.0.0:50000->50000/tcp</span></code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Primera vez vs sesiones posteriores</strong><br>
+                    La primera vez <code>--build</code> construye la imagen (~45-90 s). En sesiones
+                    posteriores, si no cambiaste <code>jenkins/Dockerfile</code>, omite <code>--build</code>:
+                    <div class="code-block" style="margin: 8px 0 0;">
+                        <pre><code><span class="cmd">docker compose up -d</span></code></pre>
+                    </div>
+                </div>
+
+                <h3>Esperar a que Jenkins esté listo</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cm"># Seguir los logs hasta ver "Jenkins is fully up and running"</span>
+<span class="cmd">docker compose logs -f</span>
+<span class="out">jenkins  | Running from: /usr/share/jenkins/jenkins.war
+jenkins  | ...
+jenkins  | INFO: Jenkins is fully up and running</span>
+
+<span class="cm"># (Ctrl+C para salir del follow de logs)</span></code></pre>
+                </div>
+
+                <h3>Qué esperar en el navegador</h3>
+                <ol class="ui-steps">
+                    <li>
+                        Abre <strong>http://localhost:8080</strong>. Verás la pantalla de
+                        <em>"Unlock Jenkins"</em> pidiendo la contraseña inicial.
+                    </li>
+                    <li>
+                        Obtén la contraseña:
+                        <div class="code-block" style="margin: 8px 0;">
+                            <pre><code><span class="cmd">docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword</span>
+<span class="out">a3f7c2e1b04d5e6f8a9b0c1d2e3f4a5b</span></code></pre>
+                        </div>
+                    </li>
+                    <li>Pégala en el campo y haz clic en <em>"Continue"</em>. Elige <em>"Install suggested plugins"</em>.</li>
+                    <li>Cuando termine la instalación de plugins, crea el usuario admin.</li>
+                    <li>
+                        Confirma que Docker y kubectl están disponibles dentro del contenedor:
+                        <div class="code-block" style="margin: 8px 0;">
+                            <pre><code><span class="cmd">docker exec jenkins docker version</span>
+<span class="out">Client: Docker Engine - Community  Version: 27.x.x</span>
+
+<span class="cmd">docker exec jenkins kubectl version --client</span>
+<span class="out">Client Version: v1.31.x</span></code></pre>
+                        </div>
+                    </li>
+                </ol>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; Jenkins ya configurado (sesiones anteriores)</strong><br>
+                    Si ya configuraste Jenkins antes, el volumen <code>jenkins_home</code> conserva todos
+                    los datos (jobs, credenciales, plugins). Al hacer <code>docker compose up -d</code>,
+                    Jenkins arranca directamente con tu configuración anterior — sin pantalla de unlock.
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PASO C: Credenciales Docker Hub ── -->
+        <div class="step-card">
+            <div class="step-header s3">
+                <div class="step-num">C</div>
+                <div class="step-header-text">
+                    <h3>Credenciales Docker Hub en Jenkins</h3>
+                    <div class="step-desc">Solo en la primera vez — el volumen las persiste entre sesiones</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <p>El stage <em>Push</em> del Jenkinsfile necesita el credential ID <code>dockerhub-creds</code>.
+                Si ya lo creaste en una sesión anterior, sáltate este paso.</p>
+
+                <ol class="ui-steps">
+                    <li>En Jenkins: <strong>Manage Jenkins → Credentials → (global) → Add Credentials</strong>.</li>
+                    <li>Tipo: <strong>Username with password</strong>.</li>
+                    <li><strong>Username</strong>: tu Docker ID (p. ej. <code>jaquimbayoc</code>).</li>
+                    <li><strong>Password</strong>: el Personal Access Token (PAT) generado en Docker Hub con permisos <em>Read &amp; Write</em>.</li>
+                    <li><strong>ID</strong>: <code>dockerhub-creds</code> — debe ser exactamente este valor (el Jenkinsfile lo referencia así).</li>
+                    <li>Haz clic en <strong>Create</strong>.</li>
+                </ol>
+
+                <div class="info-box">
+                    <strong>&#128161; Por qué PAT y no contraseña de Docker Hub</strong><br>
+                    Desde 2022, Docker Hub bloquea el login con contraseña directa desde CI.
+                    El Personal Access Token (PAT) es la forma correcta y permite revocar acceso
+                    al pipeline sin cambiar tu contraseña principal.
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PASO D: Namespace y manifiestos K8s ── -->
+        <div class="step-card">
+            <div class="step-header s4">
+                <div class="step-num">D</div>
+                <div class="step-header-text">
+                    <h3>Crear el namespace y aplicar manifiestos Kubernetes</h3>
+                    <div class="step-desc">Solo la primera vez — o para restaurar el estado si borraste los recursos</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <p>Aunque el stage <em>Deploy</em> del Jenkinsfile ejecuta <code>kubectl apply -f k8s/</code>,
+                es recomendable aplicar los manifiestos manualmente la primera vez para verificar
+                que todo está bien antes de lanzar el pipeline.</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL — desde la raíz del repo</div>
+                    <pre><code><span class="cm"># Asegúrate de estar en la raíz del proyecto (no en jenkins/)</span>
+<span class="cmd">cd C:\Users\TU-USUARIO\Documents\GitHub\devops-taskapi</span>
+
+<span class="cm"># Aplicar todos los manifiestos en orden</span>
+<span class="cmd">kubectl apply -f k8s/</span>
+<span class="out">namespace/devops-project created
+configmap/taskapi-config created
+deployment.apps/taskapi created
+service/taskapi-service created
+horizontalpodautoscaler.autoscaling/taskapi-hpa created</span>
+
+<span class="cm"># Verificar que los pods arrancan</span>
+<span class="cmd">kubectl get pods -n devops-project -w</span>
+<span class="out">NAME                       READY   STATUS              RESTARTS   AGE
+taskapi-6d8f7b9c4d-xk2p9   0/1     ContainerCreating   0          5s
+taskapi-6d8f7b9c4d-xk2p9   1/1     Running             0          18s
+taskapi-6d8f7b9c4d-zt8wr   1/1     Running             0          20s</span>
+
+<span class="cm"># (Ctrl+C cuando ambos estén Running)</span></code></pre>
+                </div>
+
+                <div class="test-results">
+<span class="t-info">Estado esperado tras kubectl apply</span>
+<span class="t-dim">──────────────────────────────────────────────────────────────</span>
+<span class="cmd">kubectl get all -n devops-project</span>
+<span class="t-dim">NAME                           READY   STATUS    RESTARTS   AGE</span>
+<span class="t-pass">pod/taskapi-6d8f7b9c4d-xk2p9   1/1     Running   0          1m</span>
+<span class="t-pass">pod/taskapi-6d8f7b9c4d-zt8wr   1/1     Running   0          1m</span>
+<span class="t-dim"></span>
+<span class="t-dim">NAME                      TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE</span>
+<span class="t-k8s">service/taskapi-service   LoadBalancer   10.108.42.190   localhost     80:31200/TCP   1m</span>
+<span class="t-dim"></span>
+<span class="t-dim">NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE</span>
+<span class="t-k8s">deployment.apps/taskapi               2/2     2            2           1m</span>
+<span class="t-dim"></span>
+<span class="t-dim">NAME                                         REFERENCE             TARGETS   MINPODS   MAXPODS   REPLICAS</span>
+<span class="t-k8s">horizontalpodautoscaler.autoscaling/taskapi-hpa   Deployment/taskapi   18%/60%   2         5         2</span>
+                </div>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; <code>ErrImagePull</code> o <code>ImagePullBackOff</code></strong><br>
+                    Ocurre cuando la imagen <code>TU-USUARIO/devops-taskapi:latest</code> no existe aún
+                    en Docker Hub. Es normal si no has ejecutado el pipeline todavía. El pod pasará a
+                    estado <em>Running</em> automáticamente tras el primer build exitoso de Jenkins
+                    que publique la imagen.
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PASO E: Crear job en Jenkins ── -->
+        <div class="step-card">
+            <div class="step-header s5">
+                <div class="step-num">E</div>
+                <div class="step-header-text">
+                    <h3>Crear el job en Jenkins (solo primera vez)</h3>
+                    <div class="step-desc">New Item → Pipeline → Pipeline script from SCM → GitHub + Jenkinsfile</div>
+                </div>
+            </div>
+            <div class="step-body">
+                <ol class="ui-steps">
+                    <li>En Jenkins (http://localhost:8080): <strong>New Item</strong>.</li>
+                    <li>Nombre: <code>devops-taskapi</code>. Tipo: <strong>Pipeline</strong>. Clic en <em>OK</em>.</li>
+                    <li>
+                        Sección <strong>Build Triggers</strong>: marca <em>Poll SCM</em> y escribe:
+                        <div class="code-block" style="margin: 8px 0;"><pre><code>H/5 * * * *</code></pre></div>
+                    </li>
+                    <li>
+                        Sección <strong>Pipeline</strong>:
+                        <ul style="margin: 6px 0 0 18px;">
+                            <li>Definición: <em>Pipeline script from SCM</em></li>
+                            <li>SCM: <em>Git</em></li>
+                            <li>Repository URL: URL de tu repositorio en GitHub</li>
+                            <li>Branch: <code>*/main</code></li>
+                            <li>Script Path: <code>Jenkinsfile</code></li>
+                        </ul>
+                    </li>
+                    <li>Haz clic en <strong>Save</strong>.</li>
+                    <li>Primer build: <strong>Build Now</strong> (sin esperar el polling).</li>
+                </ol>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; Antes de hacer Build Now</strong><br>
+                    Verifica que el archivo <code>Jenkinsfile</code> en la raíz del repositorio tiene
+                    <code>IMAGE_NAME = "TU-USUARIO/devops-taskapi"</code> con tu Docker ID real
+                    (no el placeholder literal). De lo contrario, el stage Push fallará con
+                    <em>"unauthorized: authentication required"</em>.
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PASO F: Ejecución del pipeline ── -->
+        <div class="step-card">
+            <div class="step-header s6">
+                <div class="step-num">F</div>
+                <div class="step-header-text">
+                    <h3>Ejecución del pipeline — qué esperar en cada stage</h3>
+                    <div class="step-desc">Tiempos aproximados y salidas esperadas por stage</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <h3>Stage 1 — Checkout (~3 s)</h3>
+                <div class="test-results">
+<span class="t-info">Stage: Checkout</span>
+<span class="t-pass"> ✓ Cloning repository https://github.com/TU-USUARIO/devops-taskapi.git</span>
+<span class="t-pass"> ✓ Checking out Revision abc1234 (refs/remotes/origin/main)</span>
+<span class="t-dim"> > git checkout -f abc1234</span>
+                </div>
+
+                <h3>Stage 2 — Test (~25 s)</h3>
+                <div class="test-results">
+<span class="t-info">Stage: Test</span>
+<span class="t-dim"> + python3 -m venv .venv</span>
+<span class="t-dim"> + . .venv/bin/activate</span>
+<span class="t-dim"> + pip install --quiet -r requirements.txt</span>
+<span class="t-dim"> + pytest tests/ -v --junit-xml=test-report.xml</span>
+<span class="t-dim">──────────────────────────────────────────────────────────────</span>
+<span class="t-pass">tests/test_tasks.py::test_health_check                    PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_create_task                     PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_create_task_sin_descripcion     PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_listar_tareas_vacia             PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_listar_tareas                   PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_get_task_existente              PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_get_task_no_existente           PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_update_task                     PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_update_task_no_existente        PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_eliminar_tarea                  PASSED</span>
+<span class="t-pass">tests/test_tasks.py::test_eliminar_tarea_no_existente     PASSED</span>
+<span class="t-dim">──────────────────────────────────────────────────────────────</span>
+<span class="t-pass">11 passed in 2.83s</span>
+<span class="t-pass"> ✓ JUnit test report archived: test-report.xml (11 tests)</span>
+                </div>
+
+                <h3>Stage 3 — Build (~40 s)</h3>
+                <div class="test-results">
+<span class="t-info">Stage: Build</span>
+<span class="t-dim"> + docker build -t TU-USUARIO/devops-taskapi:5 .</span>
+<span class="t-dim"> [+] Building 38.1s (9/9) FINISHED</span>
+<span class="t-pass"> ✓ Successfully tagged TU-USUARIO/devops-taskapi:5</span>
+<span class="t-dim"> + docker tag TU-USUARIO/devops-taskapi:5 TU-USUARIO/devops-taskapi:latest</span>
+<span class="t-pass"> ✓ Imagen tageada como :latest</span>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; El build es más rápido desde el segundo intento</strong><br>
+                    Docker usa caché de capas. Si <code>requirements.txt</code> no cambió,
+                    el paso <code>pip install</code> se saltará (cache hit) y el build tomará ~5-8 s
+                    en lugar de ~40 s.
+                </div>
+
+                <h3>Stage 4 — Push (~15 s)</h3>
+                <div class="test-results">
+<span class="t-info">Stage: Push</span>
+<span class="t-dim"> + echo "***" | docker login -u TU-USUARIO --password-stdin</span>
+<span class="t-pass"> ✓ Login Succeeded</span>
+<span class="t-dim"> + docker push TU-USUARIO/devops-taskapi:5</span>
+<span class="t-pass"> ✓ The push refers to repository [docker.io/TU-USUARIO/devops-taskapi]</span>
+<span class="t-pass"> ✓ 5: digest: sha256:abc123... size: 1234</span>
+<span class="t-dim"> + docker push TU-USUARIO/devops-taskapi:latest</span>
+<span class="t-pass"> ✓ latest: digest: sha256:abc123... size: 1234</span>
+                </div>
+
+                <h3>Stage 5 — Deploy (~20 s)</h3>
+                <div class="test-results">
+<span class="t-info">Stage: Deploy</span>
+<span class="t-dim"> + cp $HOME/.kube/config /tmp/kubeconfig</span>
+<span class="t-dim"> + sed -i 's/127.0.0.1/host.docker.internal/g' /tmp/kubeconfig</span>
+<span class="t-dim"> + sed -i 's/certificate-authority-data:.*/insecure-skip-tls-verify: true/' /tmp/kubeconfig</span>
+<span class="t-pass"> ✓ namespace/devops-project unchanged</span>
+<span class="t-pass"> ✓ configmap/taskapi-config unchanged</span>
+<span class="t-pass"> ✓ deployment.apps/taskapi configured</span>
+<span class="t-pass"> ✓ service/taskapi-service unchanged</span>
+<span class="t-pass"> ✓ horizontalpodautoscaler.autoscaling/taskapi-hpa unchanged</span>
+<span class="t-dim"> + kubectl set image deployment/taskapi taskapi=TU-USUARIO/devops-taskapi:5 -n devops-project</span>
+<span class="t-pass"> ✓ deployment.apps/taskapi image updated</span>
+<span class="t-dim"> + kubectl rollout status deployment/taskapi -n devops-project --timeout=120s</span>
+<span class="t-pass"> ✓ Waiting for deployment "taskapi" rollout to finish: 1 out of 2 new replicas have been updated...</span>
+<span class="t-pass"> ✓ Waiting for deployment "taskapi" rollout to finish: 1 old replicas are pending termination...</span>
+<span class="t-pass"> ✓ deployment "taskapi" successfully rolled out</span>
+                </div>
+
+                <h3>Post — pipeline completo</h3>
+                <div class="test-results">
+<span class="t-dim"> + docker logout || true</span>
+<span class="t-dim"> + cleanWs()</span>
+<span class="t-pass">Pipeline OK — imagen TU-USUARIO/devops-taskapi:5 publicada y desplegada en Kubernetes</span>
+<span class="t-dim">──────────────────────────────────────────────────────────────</span>
+<span class="t-info">Pipeline devops-taskapi #5</span>
+<span class="t-pass"> ✓ Checkout    3s</span>
+<span class="t-pass"> ✓ Test       25s</span>
+<span class="t-pass"> ✓ Build      40s</span>
+<span class="t-pass"> ✓ Push       15s</span>
+<span class="t-pass"> ✓ Deploy     20s</span>
+<span class="t-dim">──────────────────────────────────────</span>
+<span class="t-pass">Duración total: ~103 s   Estado: SUCCESS</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PASO G: Verificación final ── -->
+        <div class="step-card">
+            <div class="step-header s7">
+                <div class="step-num">G</div>
+                <div class="step-header-text">
+                    <h3>Verificación final del sistema completo</h3>
+                    <div class="step-desc">Comandos de comprobación y salidas esperadas tras el primer deploy exitoso</div>
+                </div>
+            </div>
+            <div class="step-body">
+
+                <h3>1. Pods corriendo</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cmd">kubectl get pods -n devops-project</span></code></pre>
+                </div>
+                <div class="test-results">
+<span class="t-dim">NAME                       READY   STATUS    RESTARTS   AGE</span>
+<span class="t-pass">taskapi-7f9d6c5b4a-ab1cd   1/1     Running   0          2m</span>
+<span class="t-pass">taskapi-7f9d6c5b4a-ef2gh   1/1     Running   0          2m</span>
+                </div>
+
+                <h3>2. Service con EXTERNAL-IP = localhost</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cmd">kubectl get svc -n devops-project</span></code></pre>
+                </div>
+                <div class="test-results">
+<span class="t-dim">NAME              TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE</span>
+<span class="t-k8s">taskapi-service   LoadBalancer   10.108.42.190   localhost     80:31200/TCP   3m</span>
+                </div>
+
+                <h3>3. HPA activo</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cmd">kubectl get hpa -n devops-project</span></code></pre>
+                </div>
+                <div class="test-results">
+<span class="t-dim">NAME          REFERENCE             TARGETS   MINPODS   MAXPODS   REPLICAS   AGE</span>
+<span class="t-k8s">taskapi-hpa   Deployment/taskapi   18%/60%   2         5         2          4m</span>
+                </div>
+
+                <h3>4. API respondiendo en http://localhost</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cm"># Health check</span>
+<span class="cmd">curl http://localhost/health</span>
+<span class="out">{"status":"ok"}</span>
+
+<span class="cm"># Crear una tarea de prueba</span>
+<span class="cmd">curl -X POST http://localhost/tasks/ -H "Content-Type: application/json" -d '{"title":"Deploy exitoso","description":"Semana 3 completa"}'</span>
+<span class="out">{"id":1,"title":"Deploy exitoso","description":"Semana 3 completa","completed":false}</span>
+
+<span class="cm"># Documentación interactiva en el navegador</span>
+<span class="cm"># http://localhost/docs</span></code></pre>
+                </div>
+
+                <h3>5. Logs de los pods</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cmd">kubectl logs -l app=taskapi -n devops-project --tail=5</span>
+<span class="out">INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:0 - "GET /health HTTP/1.1" 200 OK</span></code></pre>
+                </div>
+
+                <h3>6. Detener todo al final de la sesión</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span> PowerShell LOCAL</div>
+                    <pre><code><span class="cm"># Detener Jenkins (los datos se conservan en el volumen jenkins_home)</span>
+<span class="cmd">cd jenkins</span>
+<span class="cmd">docker compose down</span>
+<span class="out">[+] Running 1/1
+ ✔ Container jenkins  Stopped</span>
+
+<span class="cm"># Opcional: eliminar recursos de Kubernetes (liberan memoria)</span>
+<span class="cmd">kubectl delete namespace devops-project</span>
+<span class="out">namespace "devops-project" deleted</span>
+
+<span class="cm"># Docker Desktop se puede cerrar desde la bandeja del sistema</span></code></pre>
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; Si eliminas el namespace, al volver a arrancar…</strong><br>
+                    Solo necesitas repetir el <strong>Paso D</strong> (<code>kubectl apply -f k8s/</code>)
+                    o ejecutar un nuevo build de Jenkins que lo hará automáticamente con el stage Deploy.
+                    Jenkins y sus credenciales siguen en el volumen — no necesitas reconfigurarlos.
+                </div>
+
+                <div class="success-box">
+                    <strong>&#127881; Sistema completo operativo</strong><br>
+                    Tienes el pipeline CI/CD de extremo a extremo funcionando:<br>
+                    cada <code>git push</code> a <code>main</code> activa Tests → Build → Push a Docker Hub
+                    → Deploy en Kubernetes sin downtime. El HPA escala automáticamente entre 2 y 5 pods
+                    según la carga de CPU.
+                </div>
+            </div>
         </div>
 
     </div><!-- /container -->
