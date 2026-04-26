@@ -515,7 +515,40 @@
 <span class="cm"># ── Acceso al socket de Docker ───────────────────────────────</span>
 <span class="kw">RUN</span> groupadd -f docker &amp;&amp; usermod -aG docker jenkins
 
-<span class="kw">USER</span> jenkins</code></pre>
+<span class="cm"># ── gosu: cambia de root a jenkins sin perder acceso al socket</span>
+<span class="kw">RUN</span> curl -fsSL <span class="st">"https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64"</span> \
+        -o /usr/local/bin/gosu &amp;&amp; \
+    chmod +x /usr/local/bin/gosu
+
+<span class="cm"># ── Entrypoint: chmod socket → gosu jenkins → jenkins.sh ─────</span>
+<span class="kw">COPY</span> docker-entrypoint.sh /docker-entrypoint.sh
+<span class="kw">RUN</span> chmod +x /docker-entrypoint.sh
+
+<span class="kw">ENTRYPOINT</span> ["/docker-entrypoint.sh"]</code></pre>
+                </div>
+
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; Por qu&eacute; gosu y no <code>USER jenkins</code></strong><br>
+                    El contenedor necesita correr como <strong>root</strong> al inicio para ejecutar
+                    <code>chmod 666 /var/run/docker.sock</code> (el socket del host llega montado con permisos de root).
+                    Luego, <code>gosu jenkins</code> baja al usuario <code>jenkins</code> sin privilegios.
+                    Si se usa solo <code>USER jenkins</code>, el entrypoint no puede ajustar el socket y
+                    Jenkins falla al ejecutar <code>docker build</code>.
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                        jenkins/docker-entrypoint.sh
+                    </div>
+                    <pre><code>#!/bin/bash
+set -e
+
+<span class="cm"># Dar acceso al socket de Docker al usuario jenkins</span>
+chmod 666 /var/run/docker.sock 2&gt;/dev/null || true
+
+<span class="cm"># Ejecutar Jenkins como usuario jenkins (no como root)</span>
+exec gosu jenkins /usr/bin/tini -- /usr/local/bin/jenkins.sh "$@"</code></pre>
                 </div>
 
                 <h3>jenkins/docker-compose.yml</h3>

@@ -532,7 +532,13 @@ default           Active   2d</span></code></pre>
               <span class="key">port</span>: <span class="num">8000</span>
             <span class="key">initialDelaySeconds</span>: <span class="num">5</span>
             <span class="key">periodSeconds</span>: <span class="num">10</span>
-            <span class="key">failureThreshold</span>: <span class="num">3</span></code></pre>
+            <span class="key">failureThreshold</span>: <span class="num">3</span>
+          <span class="key">volumeMounts</span>:
+            - <span class="key">name</span>: <span class="st">sqlite-data</span>
+              <span class="key">mountPath</span>: <span class="st">/app/data</span>
+      <span class="key">volumes</span>:
+        - <span class="key">name</span>: <span class="st">sqlite-data</span>
+          <span class="key">emptyDir</span>: {}</code></pre>
                 </div>
 
                 <div class="info-box">
@@ -549,6 +555,15 @@ default           Active   2d</span></code></pre>
                     <code>limits</code> es el máximo que puede consumir; si lo supera, el contenedor
                     es throttled (CPU) o terminado (memoria). El HPA del paso 20 usa el valor de
                     <code>requests.cpu</code> como base para calcular el porcentaje de utilización.
+                </div>
+
+                <div class="info-box">
+                    <strong>&#128161; <code>emptyDir</code> para SQLite en Kubernetes</strong><br>
+                    La aplicación escribe la base de datos SQLite en <code>/app/data</code>.
+                    El volumen <code>emptyDir</code> crea un directorio temporal vinculado al ciclo de vida del pod:
+                    persiste mientras el pod vive (útil en desarrollo/aprendizaje) pero se borra si el pod
+                    se elimina o se mueve de nodo. En producción real se usaría un <code>PersistentVolumeClaim</code>
+                    o una base de datos externa (PostgreSQL, RDS, etc.).
                 </div>
 
             </div>
@@ -764,21 +779,39 @@ default           Active   2d</span></code></pre>
                     </div>
                     <pre><code>        <span class="kw">stage</span>(<span class="st">'Deploy'</span>) {
             <span class="kw">steps</span> {
-                <span class="cm">// Aplica namespace, configmap, deployment, service y hpa</span>
-                <span class="fn">sh</span> <span class="st">'kubectl apply -f k8s/'</span>
+                <span class="fn">sh</span> <span class="st">"""</span>
+                    <span class="cm"># 1. Copiar kubeconfig y adaptar para Docker Desktop</span>
+                    cp \$HOME/.kube/config /tmp/kubeconfig
+                    sed -i 's/127.0.0.1/host.docker.internal/g' /tmp/kubeconfig
+                    sed -i 's/certificate-authority-data:.*/insecure-skip-tls-verify: true/' /tmp/kubeconfig
+                    export KUBECONFIG=/tmp/kubeconfig
 
-                <span class="cm">// Actualiza la imagen con el número de build exacto</span>
-                <span class="fn">sh</span> <span class="st">"kubectl set image deployment/taskapi taskapi=</span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> -n devops-project"</span>
+                    <span class="cm"># 2. Aplicar todos los manifiestos</span>
+                    kubectl apply -f k8s/ --validate=false
 
-                <span class="cm">// Espera a que el rollout termine (timeout 2 min)</span>
-                <span class="fn">sh</span> <span class="st">'kubectl rollout status deployment/taskapi -n devops-project --timeout=120s'</span>
+                    <span class="cm"># 3. Actualizar imagen con el número de build exacto</span>
+                    kubectl set image deployment/taskapi taskapi=<span class="dec">${IMAGE_NAME}</span>:<span class="dec">${BUILD_NUMBER}</span> -n devops-project
+
+                    <span class="cm"># 4. Esperar a que el rollout termine (máx. 2 min)</span>
+                    kubectl rollout status deployment/taskapi -n devops-project --timeout=120s
+                <span class="st">"""</span>
             }
         }</code></pre>
                 </div>
 
+                <div class="warn-box">
+                    <strong>&#9888;&#65039; Por qu&eacute; copiar y modificar el kubeconfig</strong><br>
+                    Desde dentro del contenedor Jenkins, <code>127.0.0.1</code> apunta al propio contenedor,
+                    no al host donde corre Docker Desktop. El <code>sed</code> reemplaza esa direcci&oacute;n
+                    por <code>host.docker.internal</code> (alias de red que Docker resuelve al host).
+                    El segundo <code>sed</code> elimina la verificaci&oacute;n del certificado TLS, que no es
+                    v&aacute;lida para ese hostname alternativo. Sin estos dos pasos, kubectl devuelve
+                    &ldquo;connection refused&rdquo; o &ldquo;x509 certificate invalid&rdquo;.
+                </div>
+
                 <div class="info-box">
                     <strong>&#128161; <code>kubectl set image</code> vs editar deployment.yaml</strong><br>
-                    El manifiesto <code>deployment.yaml</code> tiene <code>image: tu-usuario/devops-taskapi:latest</code>
+                    El manifiesto <code>deployment.yaml</code> tiene <code>image: TU-USUARIO/devops-taskapi:latest</code>
                     como valor base. El comando <code>kubectl set image</code> sobrescribe ese valor
                     en el cluster con la etiqueta versionada (<code>:${BUILD_NUMBER}</code>),
                     garantizando que cada deploy usa la imagen exacta producida en ese build.
@@ -1013,9 +1046,15 @@ default           Active   2d</span></code></pre>
 
         <span class="kw">stage</span>(<span class="st">'Deploy'</span>) {
             <span class="kw">steps</span> {
-                <span class="fn">sh</span> <span class="st">'kubectl apply -f k8s/'</span>
-                <span class="fn">sh</span> <span class="st">"kubectl set image deployment/taskapi taskapi=</span><span class="dec">${IMAGE_NAME}</span><span class="st">:</span><span class="dec">${BUILD_NUMBER}</span><span class="st"> -n devops-project"</span>
-                <span class="fn">sh</span> <span class="st">'kubectl rollout status deployment/taskapi -n devops-project --timeout=120s'</span>
+                <span class="fn">sh</span> <span class="st">"""</span>
+                    cp \$HOME/.kube/config /tmp/kubeconfig
+                    sed -i 's/127.0.0.1/host.docker.internal/g' /tmp/kubeconfig
+                    sed -i 's/certificate-authority-data:.*/insecure-skip-tls-verify: true/' /tmp/kubeconfig
+                    export KUBECONFIG=/tmp/kubeconfig
+                    kubectl apply -f k8s/ --validate=false
+                    kubectl set image deployment/taskapi taskapi=<span class="dec">${IMAGE_NAME}</span>:<span class="dec">${BUILD_NUMBER}</span> -n devops-project
+                    kubectl rollout status deployment/taskapi -n devops-project --timeout=120s
+                <span class="st">"""</span>
             }
         }
     }
